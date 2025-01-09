@@ -16,7 +16,9 @@ function App() {
           <Sidebar />
         </div>     
       <div className="flex flex-col flex-1">
-          <Topbar />
+          <div className="ml-[250px]">
+            <Topbar />
+          </div>
         <div className="flex-1 ml-[240px]">
           <main className="">
             <Routes>
@@ -35,8 +37,3 @@ function App() {
 }
 
 export default App
-
-
-
-
-          
