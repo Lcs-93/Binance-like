@@ -25,3 +25,21 @@ img {
   max-width: 100%;
   height: auto;
 }
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #181a20;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b3139;
+  border-radius: 5px;
+}
+
+::selection {
+  background-color: #cdaf3a;
+  color: #000;
+}
