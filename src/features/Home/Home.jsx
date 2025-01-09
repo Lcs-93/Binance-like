@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
 const REFRESH_INTERVAL = 5000
 
@@ -26,10 +26,8 @@ const Home = () => {
   }
 
   useEffect(() => {
-    fetchCryptoData() 
-
+    fetchCryptoData()
     const intervalId = setInterval(fetchCryptoData, REFRESH_INTERVAL)
-
     return () => clearInterval(intervalId)
   }, [])
 
@@ -43,44 +41,71 @@ const Home = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center px-4">
-        <h1 className="text-2xl font-bold text-gray-800">Cryptocurrency Prices</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-white">Cryptocurrency Prices</h1>
         {lastUpdate && (
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-400">
             Last updated: {lastUpdate}
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {cryptos.map(crypto => (
-          <div 
-            key={crypto.id} 
-            className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-bold">{crypto.name} ({crypto.symbol})</h2>
-              <span className={`px-2 py-1 rounded ${
-                parseFloat(crypto.percent_change_24h) >= 0 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {crypto.percent_change_24h}%
-              </span>
-            </div>
-            <div className="space-y-2">
-              <p className="text-gray-700">
-                Price: ${parseFloat(crypto.price_usd).toLocaleString()}
-              </p>
-              <p className="text-gray-700">
-                Market Cap: ${parseFloat(crypto.market_cap_usd).toLocaleString()}
-              </p>
-              <p className="text-gray-700">
-                Volume 24h: ${parseFloat(crypto.volume24).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="text-gray-400 border-b border-gray">
+              <th className="text-left py-4 px-4">Name</th>
+              <th className="text-right py-4 px-4">Price</th>
+              <th className="text-right py-4 px-4">24h %</th>
+              <th className="text-right py-4 px-4">Market Cap</th>
+              <th className="text-right py-4 px-4">Volume (24h)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cryptos.map(crypto => (
+              <tr 
+                key={crypto.id}
+                className="border-b border-gray hover:bg-gray/50 transition-colors"
+              >
+                <td className="py-4 px-4">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${crypto.symbol.toLowerCase()}.png`}
+                      alt={crypto.name}
+                      className="w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        e.target.onerror = null
+                        e.target.src = `https://ui-avatars.com/api/?name=${crypto.symbol}&background=2b3139&color=fff&size=32&bold=true`
+                      }}
+                    />
+                    <div>
+                      <div className="font-medium text-white">{crypto.name}</div>
+                      <div className="text-sm text-gray-400">{crypto.symbol}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="text-right py-4 px-4 text-white">
+                  ${parseFloat(crypto.price_usd).toLocaleString()}
+                </td>
+                <td className="text-right py-4 px-4">
+                  <span className={`px-2 py-1 rounded ${
+                    parseFloat(crypto.percent_change_24h) >= 0 
+                      ? 'bg-green-900/50 text-green-400' 
+                      : 'bg-red-900/50 text-red-400'
+                  }`}>
+                    {crypto.percent_change_24h}%
+                  </span>
+                </td>
+                <td className="text-right py-4 px-4 text-white">
+                  ${parseFloat(crypto.market_cap_usd).toLocaleString()}
+                </td>
+                <td className="text-right py-4 px-4 text-white">
+                  ${parseFloat(crypto.volume24).toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
