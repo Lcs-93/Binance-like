@@ -57,9 +57,8 @@ const Market = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Search Bar */}
-      <div className="relative">
+    <div className="space-y-6 p-8">
+      <div className="relative ">
         <RiSearchLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
@@ -78,7 +77,7 @@ const Market = () => {
           return (
             <div
               key={crypto.id}
-              className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer"
+              className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer px-8"
             >
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center">

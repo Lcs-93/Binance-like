@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import MiniChart from '../../components/MiniChart/MiniChart'
 import { RiWallet3Line, RiCoinLine, RiArrowRightLine } from 'react-icons/ri'
+import { Link } from 'react-router-dom'
 
 const REFRESH_INTERVAL = 5000
 
@@ -25,7 +26,13 @@ const Home = () => {
     totalValue: 125750.82,
     dailyChange: 2.34,
     cryptoValue: 98250.42,
-    cashValue: 27500.40
+    cashValue: 27500.40,
+    chartData: {
+      price_usd: 125750.82,
+      percent_change_1h: 0.5,
+      percent_change_24h: 2.34,
+      percent_change_7d: 5.67
+    }
   }
 
   const fetchCryptoData = async () => {
@@ -61,28 +68,31 @@ const Home = () => {
 
   return (
     <div className="space-y-8">
-      <div className="border-y border-gray">
+      <div className="border-b border-gray p-8">
         <div className="p-6">
           <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-gray-400 text-sm">Total Portfolio Value</h2>
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-white">
-                  ${portfolioData.totalValue.toLocaleString()}
-                </span>
-                <span className={`text-sm px-2 py-1 rounded ${portfolioData.dailyChange >= 0
-                  ? 'bg-green-900/50 text-green-400'
-                  : 'bg-red-900/50 text-red-400'
-                  }`}>
-                  {portfolioData.dailyChange >= 0 ? '+' : ''}{portfolioData.dailyChange}%
-                </span>
+            <div className="flex items-center gap-8">
+              <div>
+                <h2 className="text-gray-400 text-sm">Total Portfolio Value</h2>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-bold text-white">
+                    ${portfolioData.totalValue.toLocaleString()}
+                  </span>
+                  <span className={`text-sm px-2 py-1 rounded ${portfolioData.dailyChange >= 0
+                      ? 'bg-green-900/50 text-green-400'
+                      : 'bg-red-900/50 text-red-400'
+                    }`}>
+                    {portfolioData.dailyChange >= 0 ? '+' : ''}{portfolioData.dailyChange}%
+                  </span>
+                </div>
               </div>
             </div>
-            {lastUpdate && (
-              <div className="text-sm text-gray-400">
-                Last updated: {lastUpdate}
-              </div>
-            )}
+            <div className="w-32 h-16">
+              <MiniChart
+                data={portfolioData.chartData}
+                color={portfolioData.dailyChange >= 0 ? '#22c55e' : '#ef4444'}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -123,8 +133,15 @@ const Home = () => {
         </div>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold text-white mb-4">Cryptocurrency Prices</h1>
+      <div className='px-8'>
+        <div className="flex justify-between">
+          <h1 className="text-2xl font-bold text-white mb-4">Cryptocurrency Prices</h1>
+          {lastUpdate && (
+            <div className="text-sm text-primary/50">
+              Last updated: {lastUpdate}
+            </div>
+          )}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -138,7 +155,7 @@ const Home = () => {
               </tr>
             </thead>
             <tbody>
-              {cryptos.map(crypto => {
+              {cryptos.slice(0, 4).map(crypto => {
                 const priceChange = parseFloat(crypto.percent_change_24h)
                 const chartColor = priceChange >= 0 ? '#22c55e' : '#ef4444'
 
@@ -195,6 +212,11 @@ const Home = () => {
             </tbody>
           </table>
         </div>
+          <Link to="/market" >
+            <div className="text-md font-semibold bg-primary py-2 px-4 text-background text-center mt-8 rounded-lg">
+              Aller au marché
+            </div>
+          </Link>
       </div>
     </div>
   )
