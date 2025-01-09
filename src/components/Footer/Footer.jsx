@@ -100,7 +100,7 @@ const Footer = () => {
         <div className="mt-12 pt-8 border-t border-gray">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-400 text-sm">
-              © {currentYear} Binance Like. Tous droits réservés.
+              © {currentYear} Trinance. Tous droits réservés.
             </p>
             <div className="flex space-x-6 text-sm">
               <Link to="/#" className="text-gray-400 hover:text-white transition-colors">

@@ -5,7 +5,7 @@ const Sidebar = () => {
   return (
     <aside className="relative w-64 h-screen bg-background border-r border-gray p-4">
       <div className="fixed mb-8">
-        <h1 className="text-2xl font-bold text-primary">Binance-like</h1>
+        <h1 className="text-2xl font-bold text-primary">Trinance</h1>
       </div>
       
       <nav className="space-y-2 fixed top-20 w-56">

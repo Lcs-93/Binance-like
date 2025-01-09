@@ -171,7 +171,7 @@ const Home = () => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer">
+            <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <RiCoinLine size={18} className="text-primary" />
@@ -184,11 +184,11 @@ const Home = () => {
                 <div className="text-xl font-medium text-white">
                   ${portfolioValue.cryptoValue.toLocaleString()}
                 </div>
-                <RiArrowRightLine size={18} className="text-gray-400" />
+                <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer">
+            <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <RiWallet3Line size={18} className="text-primary" />
@@ -201,7 +201,7 @@ const Home = () => {
                 <div className="text-xl font-medium text-white">
                   ${portfolioValue.cashValue.toLocaleString()}
                 </div>
-                <RiArrowRightLine size={18} className="text-gray-400" />
+                <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-primary transition-colors" />
               </div>
             </div>
           </div>
