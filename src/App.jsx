@@ -1,39 +1,75 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Sidebar from './components/Sidebar/Sidebar'
-import Footer from './components/Footer/Footer'
-import Home from './features/Home/Home'
-import Market from './features/Market/Market'
-import Transactions from './features/Transactions/Transactions'
-import ShowCrypto from './features/ShowCrypto/ShowCrypto'
-import Topbar from './components/Topbar'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
+import Login from './features/Login/Login';
+import Signup from './features/Signup/Signup';
+import Sidebar from './components/Sidebar/Sidebar';
+import Footer from './components/Footer/Footer';
+import Home from './features/Home/Home';
+import Market from './features/Market/Market';
+import Transactions from './features/Transactions/Transactions';
+import ShowCrypto from './features/ShowCrypto/ShowCrypto';
+import Topbar from './components/Topbar';
+import './App.css';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem('activeUser')
+  );
+
   return (
     <BrowserRouter>
       <div className="flex bg-background min-h-screen text-white">
-        <div className="fixed top-0 left-0 h-full">
-          <Sidebar />
-        </div>     
-      <div className="flex flex-col flex-1">
-          <div className="ml-[250px]">
-            <Topbar />
+        {isAuthenticated && (
+          <div className="fixed top-0 left-0 h-full">
+            <Sidebar />
           </div>
-        <div className="flex-1 ml-[240px]">
-          <main className="">
+        )}
+
+        <div className={`flex flex-col flex-1 ${isAuthenticated ? 'ml-[250px]' : ''}`}>
+          {isAuthenticated && <Topbar onLogout={() => setIsAuthenticated(false)} />}
+          
+          <main className={isAuthenticated ? '' : 'flex items-center justify-center h-screen'}>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/market" element={<Market />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/crypto/:id" element={<ShowCrypto />} />
+              <Route
+                path="/login"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/home" replace />
+                  ) : (
+                    <Login onLoginSuccess={() => setIsAuthenticated(true)} />
+                  )
+                }
+              />
+
+              <Route
+                path="/signup"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/home" replace />
+                  ) : (
+                    <Signup onSignupSuccess={() => setIsAuthenticated(true)} />
+                  )
+                }
+              />
+
+              {isAuthenticated ? (
+                <>
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/market" element={<Market />} />
+                  <Route path="/transactions" element={<Transactions />} />
+                  <Route path="/crypto/:id" element={<ShowCrypto />} />
+                  <Route path="/" element={<Navigate to="/home" replace />} />
+                </>
+              ) : (
+                <Route path="*" element={<Navigate to="/login" replace />} />
+              )}
             </Routes>
           </main>
-          <Footer />
+          {isAuthenticated && <Footer />}
         </div>
       </div>
-    </div>
     </BrowserRouter>
-  )
+  );
 }
 
-export default App
+export default App;

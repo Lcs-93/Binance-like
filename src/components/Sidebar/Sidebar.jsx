@@ -9,7 +9,9 @@ const Sidebar = () => {
       </div>
       
       <nav className="space-y-2 fixed top-20 w-56">
-        <SidebarLink to="/" icon={RiHome5Line} label="Home" />
+
+        <SidebarLink to="/home" icon={RiHome5Line} label="Home" />
+
         <SidebarLink to="/transactions" icon={RiExchangeDollarLine} label="Transactions" />
         <SidebarLink to="/market" icon={RiStockLine} label="Marché" />
       </nav>

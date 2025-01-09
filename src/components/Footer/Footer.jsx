@@ -5,10 +5,10 @@ const Footer = () => {
   const currentYear = new Date().getFullYear()
 
   const socialLinks = [
-    { icon: RiTwitterXLine, href: 'https://twitter.com/binancelike', label: 'Twitter' },
-    { icon: RiDiscordLine, href: 'https://discord.gg/binancelike', label: 'Discord' },
-    { icon: RiTelegramLine, href: 'https://t.me/binancelike', label: 'Telegram' },
-    { icon: RiGithubLine, href: 'https://github.com/binancelike', label: 'GitHub' }
+    { icon: RiTwitterXLine, label: 'Twitter' },
+    { icon: RiDiscordLine, label: 'Discord' },
+    { icon: RiTelegramLine, label: 'Telegram' },
+    { icon: RiGithubLine, label: 'GitHub' }
   ]
 
   return (
@@ -81,10 +81,10 @@ const Footer = () => {
           <div>
             <h3 className="text-primary font-bold mb-4">Communauté</h3>
             <div className="flex space-x-4">
-              {socialLinks.map(({ icon: Icon, href, label }) => (
+              {socialLinks.map(({ icon: Icon, label }) => (
                 <a
                   key={label}
-                  href={href}
+                  href={''}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-gray-400 hover:text-white transition-colors"

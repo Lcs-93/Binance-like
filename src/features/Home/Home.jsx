@@ -16,25 +16,97 @@ const formatNumber = (num) => {
   return num.toFixed(2)
 }
 
+const calculateChange = (currentValue, history) => {
+  if (!history || history.length < 2) return 0;
+  const previousValue = history[history.length - 2].value;
+  return ((currentValue - previousValue) / previousValue) * 100;
+}
+
 const Home = () => {
   const [cryptos, setCryptos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const [activeUser, setActiveUser] = useState(null)
+  const [portfolioValue, setPortfolioValue] = useState({
+    totalValue: 0,
+    cryptoValue: 0,
+    cashValue: 0,
+    history: [],
+    dailyChange: 0
+  })
   const navigate = useNavigate()
 
-  const portfolioData = {
-    totalValue: 125750.82,
-    dailyChange: 2.34,
-    cryptoValue: 98250.42,
-    cashValue: 27500.40,
-    chartData: {
-      price_usd: 125750.82,
-      percent_change_1h: 0.5,
-      percent_change_24h: 2.34,
-      percent_change_7d: 5.67
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('activeUser'));
+    setActiveUser(user);
+
+    const portfolioHistory = JSON.parse(localStorage.getItem(`portfolio_history_${user?.email}`)) || [];
+    setPortfolioValue(prev => ({ ...prev, history: portfolioHistory }));
+  }, []);
+
+  useEffect(() => {
+    if (activeUser && cryptos.length > 0) {
+      const cashValue = activeUser.cash || 0;
+      let cryptoValue = 0;
+
+      Object.entries(activeUser.cryptos || {}).forEach(([symbol, amount]) => {
+        const crypto = cryptos.find(c => c.symbol === symbol);
+        if (crypto) {
+          cryptoValue += amount * crypto.price_usd;
+        }
+      });
+
+      const totalValue = cashValue + cryptoValue;
+
+      const currentTime = new Date().toISOString();
+      const newHistory = [...portfolioValue.history, { timestamp: currentTime, value: totalValue }]
+        .slice(-24);
+
+      const dailyChange = calculateChange(totalValue, newHistory);
+
+      localStorage.setItem(`portfolio_history_${activeUser.email}`, JSON.stringify(newHistory));
+
+      setPortfolioValue({
+        cashValue,
+        cryptoValue,
+        totalValue,
+        history: newHistory,
+        dailyChange
+      });
     }
-  }
+  }, [activeUser, cryptos]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const user = JSON.parse(localStorage.getItem('activeUser'));
+      if (user) {
+        setActiveUser(user);
+        const portfolioHistory = JSON.parse(localStorage.getItem(`portfolio_history_${user.email}`)) || [];
+        setPortfolioValue(prev => ({ ...prev, history: portfolioHistory }));
+      }
+    };
+
+    const interval = setInterval(() => {
+      const user = JSON.parse(localStorage.getItem('activeUser'));
+      if (user && (!activeUser || user.cash !== activeUser.cash || JSON.stringify(user.cryptos) !== JSON.stringify(activeUser.cryptos))) {
+        setActiveUser(user);
+      }
+    }, 1000);
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [activeUser]);
+
+  useEffect(() => {
+    fetchCryptoData();
+    const interval = setInterval(fetchCryptoData, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchCryptoData = async () => {
     try {
@@ -53,12 +125,6 @@ const Home = () => {
     }
   }
 
-  useEffect(() => {
-    fetchCryptoData()
-    const intervalId = setInterval(fetchCryptoData, REFRESH_INTERVAL)
-    return () => clearInterval(intervalId)
-  }, [])
-
   if (loading && !cryptos.length) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>
   }
@@ -71,28 +137,36 @@ const Home = () => {
     <div className="space-y-8">
       <div className="border-b border-gray p-8">
         <div className="p-6">
-          <div className="flex gap-4 items-start mb-6">
-            <div className="flex items-center gap-8">
-              <div>
-                <h2 className="text-gray-400 text-sm">Total Portfolio Value</h2>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-3xl font-bold text-white">
-                    ${portfolioData.totalValue.toLocaleString()}
-                  </span>
-                  <span className={`text-sm px-2 py-1 rounded ${portfolioData.dailyChange >= 0
-                      ? 'bg-green-900/50 text-green-400'
-                      : 'bg-red-900/50 text-red-400'
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+            <div className="p-6 rounded-lg">
+              <div className="flex gap-4 items-start">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Total Portfolio Value</h3>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-3xl font-bold">
+                      ${formatNumber(portfolioValue.totalValue)}
+                    </span>
+                    <span className={`text-sm px-2 py-1 rounded ${
+                      portfolioValue.dailyChange >= 0
+                        ? 'bg-green-900/50 text-green-400'
+                        : 'bg-red-900/50 text-red-400'
                     }`}>
-                    {portfolioData.dailyChange >= 0 ? '+' : ''}{portfolioData.dailyChange}%
-                  </span>
+                      {portfolioValue.dailyChange >= 0 ? '+' : ''}
+                      {portfolioValue.dailyChange.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="w-32 h-16">
+                  <MiniChart
+                    data={{
+                      price_usd: portfolioValue.totalValue,
+                      percent_change_24h: portfolioValue.dailyChange,
+                      history: portfolioValue.history
+                    }}
+                    color={portfolioValue.dailyChange >= 0 ? '#22c55e' : '#ef4444'}
+                  />
                 </div>
               </div>
-            </div>
-            <div className="w-32 h-16">
-              <MiniChart
-                data={portfolioData.chartData}
-                color={portfolioData.dailyChange >= 0 ? '#22c55e' : '#ef4444'}
-              />
             </div>
           </div>
 
@@ -108,7 +182,7 @@ const Home = () => {
               </div>
               <div className="flex items-center gap-40">
                 <div className="text-xl font-medium text-white">
-                  ${portfolioData.cryptoValue.toLocaleString()}
+                  ${portfolioValue.cryptoValue.toLocaleString()}
                 </div>
                 <RiArrowRightLine size={18} className="text-gray-400" />
               </div>
@@ -125,7 +199,7 @@ const Home = () => {
               </div>
               <div className="flex items-center gap-40">
                 <div className="text-xl font-medium text-white">
-                  ${portfolioData.cashValue.toLocaleString()}
+                  ${portfolioValue.cashValue.toLocaleString()}
                 </div>
                 <RiArrowRightLine size={18} className="text-gray-400" />
               </div>
@@ -215,11 +289,11 @@ const Home = () => {
             </tbody>
           </table>
         </div>
-          <Link to="/market" >
-            <div className="text-md font-semibold bg-primary py-2 px-4 text-background text-center mt-8 rounded-lg">
-              Aller au marché
-            </div>
-          </Link>
+        <Link to="/market" >
+          <div className="text-md font-semibold bg-primary py-2 px-4 text-background text-center mt-8 rounded-lg">
+            Aller au marché
+          </div>
+        </Link>
       </div>
     </div>
   )
