@@ -137,20 +137,33 @@ const ShowCrypto = () => {
 
     const amount = parseFloat(saleAmount);
     if (isNaN(amount) || amount <= 0) {
-      setError('Please enter a valid amount');
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        message: 'Veuillez entrer un montant valide'
+      });
       return;
     }
 
-    const currentAmount = activeUser.cryptos[crypto.symbol] || 0;
+    const currentAmount = activeUser.cryptos?.[crypto.symbol] || 0;
     
     if (amount > currentAmount) {
-      setError(`You only have ${currentAmount} ${crypto.symbol}`);
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        message: `Vous ne possédez que ${currentAmount} ${crypto.symbol}`
+      });
       return;
     }
 
     const totalValue = amount * parseFloat(crypto.price_usd);
     const updatedCash = activeUser.cash + totalValue;
     const updatedCryptos = { ...activeUser.cryptos };
+    
+    if (!updatedCryptos[crypto.symbol]) {
+      updatedCryptos[crypto.symbol] = 0;
+    }
+    
     updatedCryptos[crypto.symbol] = currentAmount - amount;
 
     if (updatedCryptos[crypto.symbol] === 0) {
@@ -163,10 +176,12 @@ const ShowCrypto = () => {
       cryptos: updatedCryptos
     };
 
-    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
-    setActiveUser(updatedUser);
-    setSaleAmount('');
-    setError(null);
+    updateUserData(updatedUser);
+    setModalState({
+      isOpen: true,
+      type: 'success',
+      message: `${amount} ${crypto.symbol} ont été vendus pour $${totalValue.toFixed(2)}`
+    });
   };
 
   const getMaxPurchaseAmount = () => {
@@ -176,7 +191,7 @@ const ShowCrypto = () => {
 
   const getMaxSaleAmount = () => {
     if (!activeUser || !crypto) return 0;
-    return activeUser.cryptos[crypto.symbol] || 0;
+    return activeUser.cryptos?.[crypto.symbol] || 0;
   };
 
   const handleAmountChange = (e) => {
@@ -351,7 +366,7 @@ const ShowCrypto = () => {
                   <div className="text-xl font-bold">
                     {isBuying 
                       ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
-                      : `${activeUser?.cryptos[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
+                      : `${activeUser?.cryptos?.[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
                     }
                   </div>
                 </div>
