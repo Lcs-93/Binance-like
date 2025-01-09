@@ -2,7 +2,9 @@ import { Link, useLocation } from 'react-router-dom'
 
 const SidebarLink = ({ to, icon: Icon, label }) => {
   const location = useLocation()
-  const isActive = location.pathname === to
+  const isActive = to === '/market' 
+    ? location.pathname === to || location.pathname.startsWith('/crypto/')
+    : location.pathname === to
 
   return (
     <Link
