@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Login() {
+function Login({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -9,10 +9,14 @@ function Login() {
 
   const handleLogin = () => {
     setLoading(true);
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser && storedUser.email === email && storedUser.password === password) {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (user) {
       setTimeout(() => {
-        navigate('/home'); // Redirige vers la page home
+        localStorage.setItem('activeUser', JSON.stringify(user));
+        onLoginSuccess();
+        navigate('/home');
       }, 500);
     } else {
       setTimeout(() => {
@@ -68,4 +72,3 @@ function Login() {
 }
 
 export default Login;
-

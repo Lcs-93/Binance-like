@@ -4,12 +4,20 @@ import { FiDownload } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
 import { MdDashboard } from "react-icons/md";
 import { IoLogOutOutline } from "react-icons/io5";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
-const Topbar = () => {
+const Topbar = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeUser, setActiveUser] = useState(null);
+  const navigate = useNavigate();
   let timeout;
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('activeUser'));
+    setActiveUser(user);
+  }, []);
 
   const handleMouseEnter = () => {
     clearTimeout(timeout); 
@@ -50,7 +58,7 @@ const Topbar = () => {
             {menuOpen && (
               <div className="absolute right-0 mt-2 bg-[#1e2329] text-white rounded-md shadow-lg py-4 w-56 border border-gray-700">
                 <div className="px-4 pb-3 border-b border-gray-600">
-                  <p className="text-sm font-medium">elliot.fiorese@gmail.com</p>
+                  <p className="text-sm font-medium">{activeUser?.email}</p>
                 </div>
 
                 <div className="py-2">
@@ -61,13 +69,16 @@ const Topbar = () => {
                     <MdDashboard className="text-lg mr-3" />
                     Tableau de bord
                   </a>
-                  <a
-                    href="#logout"
-                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition text-red-400"
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      navigate('/login');
+                    }}
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition text-red-400 w-full text-left"
                   >
                     <IoLogOutOutline className="text-lg mr-3" />
                     Déconnexion
-                  </a>
+                  </button>
                 </div>
               </div>
             )}

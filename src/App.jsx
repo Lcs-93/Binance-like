@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState } from 'react';
 import Login from './features/Login/Login';
 import Signup from './features/Signup/Signup';
@@ -13,47 +13,58 @@ import './App.css';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem('user') // Vérifie si un utilisateur est connecté
+    !!localStorage.getItem('activeUser')
   );
 
   return (
     <BrowserRouter>
       <div className="flex bg-background min-h-screen text-white">
-        {/* Affiche la barre latérale uniquement si l'utilisateur est authentifié */}
         {isAuthenticated && (
           <div className="fixed top-0 left-0 h-full">
             <Sidebar />
           </div>
         )}
 
-        <div className={`flex-1 ${isAuthenticated ? 'ml-[240px]' : 'flex items-center justify-center'}`}>
-          <main className="">
+        <div className={`flex flex-col flex-1 ${isAuthenticated ? 'ml-[250px]' : ''}`}>
+          {isAuthenticated && <Topbar onLogout={() => setIsAuthenticated(false)} />}
+          
+          <main className={isAuthenticated ? '' : 'flex items-center justify-center h-screen'}>
             <Routes>
-              {/* Page de Connexion */}
               <Route
-                path="/"
-                element={<Login onLoginSuccess={() => setIsAuthenticated(true)} />}
+                path="/login"
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/home" replace />
+                  ) : (
+                    <Login onLoginSuccess={() => setIsAuthenticated(true)} />
+                  )
+                }
               />
 
-              {/* Page d'Inscription */}
               <Route
                 path="/signup"
-                element={<Signup onSignupSuccess={() => setIsAuthenticated(true)} />}
+                element={
+                  isAuthenticated ? (
+                    <Navigate to="/home" replace />
+                  ) : (
+                    <Signup onSignupSuccess={() => setIsAuthenticated(true)} />
+                  )
+                }
               />
 
-              {/* Pages principales uniquement accessibles après authentification */}
-              {isAuthenticated && (
+              {isAuthenticated ? (
                 <>
-                
                   <Route path="/home" element={<Home />} />
                   <Route path="/market" element={<Market />} />
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/crypto/:id" element={<ShowCrypto />} />
+                  <Route path="/" element={<Navigate to="/home" replace />} />
                 </>
+              ) : (
+                <Route path="*" element={<Navigate to="/login" replace />} />
               )}
             </Routes>
           </main>
-          {/* Affiche le footer uniquement si l'utilisateur est authentifié */}
           {isAuthenticated && <Footer />}
         </div>
       </div>

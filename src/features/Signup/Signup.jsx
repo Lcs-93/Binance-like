@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-function Signup() {
+function Signup({ onSignupSuccess }) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const navigate = useNavigate();
 
-  // Expression régulière pour valider le format de l'email
   const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-  // Expression régulière pour valider le mot de passe (min 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre)
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
 
   const handleSignup = () => {
-    setErrorMessage(''); // Réinitialise le message d'erreur avant chaque validation
+    setErrorMessage(''); 
 
     if (!username || !email || !password) {
       setErrorMessage('Veuillez remplir tous les champs.');
@@ -32,10 +30,28 @@ function Signup() {
       return;
     }
 
-    const newUser = { username, email, password };
-    localStorage.setItem('user', JSON.stringify(newUser)); // Stocke dans localStorage
-    alert('Compte créé avec succès !');
-    navigate('/home'); // Redirige vers la page de connexion
+    const newUser = { 
+      username, 
+      email, 
+      password,
+      cash: 0,
+      cryptos: {}
+    };
+    
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    
+    if (users.some(user => user.email === email)) {
+      setErrorMessage('Un compte existe déjà avec cet email.');
+      return;
+    }
+    
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    
+    localStorage.setItem('activeUser', JSON.stringify(newUser));
+    
+    onSignupSuccess();
+    navigate('/home'); 
   };
 
   return (
