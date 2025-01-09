@@ -4,6 +4,7 @@ import Footer from './components/Footer/Footer'
 import Home from './features/Home/Home'
 import Market from './features/Market/Market'
 import Transactions from './features/Transactions/Transactions'
+import ShowCrypto from './features/ShowCrypto/ShowCrypto'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/market" element={<Market />} />
               <Route path="/transactions" element={<Transactions />} />
+              <Route path="/crypto/:id" element={<ShowCrypto />} />
             </Routes>
           </main>
           <Footer />

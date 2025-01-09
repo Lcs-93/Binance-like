@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { RiSearchLine, RiArrowRightLine } from 'react-icons/ri'
 import MiniChart from '../../components/MiniChart/MiniChart'
+import { useNavigate } from 'react-router-dom'
 
 const REFRESH_INTERVAL = 5000
 
@@ -20,16 +21,16 @@ const Market = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const navigate = useNavigate()
 
   const fetchCryptoData = async () => {
     try {
       const response = await fetch('https://api.coinlore.net/api/tickers/')
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
-      }
       const data = await response.json()
-      setCryptos(data.data)
-      setError(null)
+      if (data && data.data) {
+        setCryptos(data.data)
+        setError(null)
+      }
     } catch (error) {
       setError(error.message)
     } finally {
@@ -39,8 +40,8 @@ const Market = () => {
 
   useEffect(() => {
     fetchCryptoData()
-    const intervalId = setInterval(fetchCryptoData, REFRESH_INTERVAL)
-    return () => clearInterval(intervalId)
+    const interval = setInterval(fetchCryptoData, REFRESH_INTERVAL)
+    return () => clearInterval(interval)
   }, [])
 
   const filteredCryptos = cryptos.filter(crypto =>
@@ -48,65 +49,65 @@ const Market = () => {
     crypto.symbol.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  if (loading && !cryptos.length) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>
-  }
-
-  if (error) {
-    return <div className="text-red-500 text-center">{error}</div>
-  }
-
   return (
-    <div className="space-y-6 p-8">
-      <div className="relative ">
-        <RiSearchLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Search cryptocurrency..."
-          className="w-full bg-gray/50 text-white pl-12 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+    <div className="p-8">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="relative flex-1">
+          <input
+            type="text"
+            placeholder="Search cryptocurrency..."
+            className="w-full bg-gray/50 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-light focus:outline-none focus:ring-2 focus:ring-primary/50"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-light" />
+        </div>
       </div>
 
       <div className="space-y-2">
-        {filteredCryptos.map(crypto => {
-          const priceChange = parseFloat(crypto.percent_change_24h)
-          const chartColor = priceChange >= 0 ? '#22c55e' : '#ef4444'
-
-          return (
+        {loading ? (
+          <div>Loading...</div>
+        ) : error ? (
+          <div className="text-red-500">{error}</div>
+        ) : (
+          filteredCryptos.map(crypto => (
             <div
               key={crypto.id}
               className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer px-8"
+              onClick={() => navigate(`/crypto/${crypto.id}`)}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 flex items-center justify-center overflow-hidden">
                   <img
                     src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${crypto.symbol.toLowerCase()}.png`}
                     alt={crypto.name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-full h-full"
                     onError={(e) => {
                       e.target.onerror = null
-                      e.target.src = `https://ui-avatars.com/api/?name=${crypto.symbol}&background=2b3139&color=fff&size=24&bold=true`
+                      e.target.src = `https://ui-avatars.com/api/?name=${crypto.symbol}&background=2b3139&color=fff&size=32&bold=true`
                     }}
                   />
                 </div>
                 <div>
-                  <div className="text-white font-medium">{crypto.name}</div>
-                  <div className="text-sm text-gray-400">{crypto.symbol}</div>
+                  <div className="font-medium">{crypto.name}</div>
+                  <div className="text-sm text-gray-light">{crypto.symbol}</div>
                 </div>
               </div>
-
+              <div className="w-[120px]">
+                <MiniChart 
+                  data={crypto} 
+                  color={parseFloat(crypto.percent_change_24h) >= 0 ? '#10B981' : '#EF4444'} 
+                  width={120}
+                />
+              </div>
               <div className="flex items-center gap-8">
-                <div className="w-24 h-12">
-                  <MiniChart data={crypto} color={chartColor} />
-                </div>
                 <div className="w-32 text-right">
                   <div className="text-white font-medium">
                     ${parseFloat(crypto.price_usd).toLocaleString()}
                   </div>
-                  <div className={`text-sm ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {priceChange >= 0 ? '+' : ''}{priceChange}%
+                  <div className={`text-sm ${parseFloat(crypto.percent_change_24h) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {parseFloat(crypto.percent_change_24h) >= 0 ? '+' : ''}
+                    {crypto.percent_change_24h}%
                   </div>
                 </div>
                 <div className="text-right w-32">
@@ -124,8 +125,8 @@ const Market = () => {
                 <RiArrowRightLine size={18} className="text-gray-400" />
               </div>
             </div>
-          )
-        })}
+          ))
+        )}
       </div>
     </div>
   )

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import MiniChart from '../../components/MiniChart/MiniChart'
 import { RiWallet3Line, RiCoinLine, RiArrowRightLine } from 'react-icons/ri'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const REFRESH_INTERVAL = 5000
 
@@ -21,6 +21,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lastUpdate, setLastUpdate] = useState(null)
+  const navigate = useNavigate()
 
   const portfolioData = {
     totalValue: 125750.82,
@@ -70,7 +71,7 @@ const Home = () => {
     <div className="space-y-8">
       <div className="border-b border-gray p-8">
         <div className="p-6">
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex gap-4 items-start mb-6">
             <div className="flex items-center gap-8">
               <div>
                 <h2 className="text-gray-400 text-sm">Total Portfolio Value</h2>
@@ -163,6 +164,7 @@ const Home = () => {
                   <tr
                     key={crypto.id}
                     className="border-b border-gray hover:bg-gray/50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/crypto/${crypto.id}`)}
                   >
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
@@ -193,10 +195,11 @@ const Home = () => {
                       </span>
                     </td>
                     <td className="py-4 px-4">
-                      <div className="flex justify-center items-center">
+                      <div className="w-[120px]">
                         <MiniChart
                           data={crypto}
-                          color={chartColor}
+                          color={parseFloat(crypto.percent_change_24h) >= 0 ? '#10B981' : '#EF4444'}
+                          width={120}
                         />
                       </div>
                     </td>
