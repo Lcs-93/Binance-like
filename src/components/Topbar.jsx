@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FiDownload, FiSearch } from "react-icons/fi";
 import { FaUserCircle } from "react-icons/fa";
 import { RiArrowRightLine } from "react-icons/ri";
+import { MdDashboard } from "react-icons/md";
+import { IoLogOutOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import RightSidebar from "./RightSidebar"
 
 const REFRESH_INTERVAL = 5000;
 
-const Topbar = () => {
+const Topbar = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeUser, setActiveUser] = useState(null);  
@@ -15,6 +17,7 @@ const Topbar = () => {
   const [cryptos, setCryptos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const searchRef = useRef(null);
   let timeout;
 
   useEffect(() => {
@@ -35,10 +38,22 @@ const Topbar = () => {
     return () => clearInterval(interval);
   }, []);
 
-
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('activeUser'));
     setActiveUser(user);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setIsSearchOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const handleMouseEnter = () => {
@@ -71,7 +86,7 @@ const Topbar = () => {
           </button>
 
           {isSearchOpen && (
-            <div className="absolute right-0 mt-2 bg-[#1e2329] text-white rounded-md shadow-lg py-4 w-96 max-h-96 overflow-y-auto border border-gray-700 z-50">
+            <div ref={searchRef} className="absolute right-0 mt-2 bg-[#1e2329] text-white rounded-md shadow-lg py-4 w-96 max-h-96 overflow-y-auto border border-gray-700 z-50">
               <div className="px-4 pb-3 border-b border-gray-600">
                 <input
                   type="text"
@@ -79,6 +94,7 @@ const Topbar = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full px-4 py-2 bg-gray-800 text-gray-400 rounded-md focus:outline-none placeholder-gray-500"
+                  autoFocus
                 />
               </div>
 
@@ -119,7 +135,10 @@ const Topbar = () => {
           )}
         </div>
 
-        <button className="flex items-center bg-yellow-400 text-black px-4 py-2 rounded-full font-semibold hover:bg-yellow-300 transition">
+        <button 
+          onClick={() => setSidebarOpen(true)}
+          className="flex items-center bg-yellow-400 text-black px-4 py-2 rounded-lg font-semibold hover:bg-yellow-300 transition"
+        >
           <FiDownload className="text-lg mr-2" />
           Dépôt
         </button>

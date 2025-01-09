@@ -1,5 +1,5 @@
 import { RiWallet3Line, RiMoneyDollarCircleLine, RiCloseLine } from 'react-icons/ri';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal/Modal';
 
 const RightSidebar = ({ isOpen, onClose }) => {
@@ -8,11 +8,25 @@ const RightSidebar = ({ isOpen, onClose }) => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [showDepositForm, setShowDepositForm] = useState(false);
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
+  const sidebarRef = useRef(null);
   const [modalState, setModalState] = useState({
     isOpen: false,
     type: 'success',
     message: ''
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('activeUser'));
@@ -128,6 +142,7 @@ const RightSidebar = ({ isOpen, onClose }) => {
         className={`fixed top-0 right-0 h-full w-96 bg-background border-l border-gray transform transition-transform duration-300 ease-in-out z-40 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        ref={sidebarRef}
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-8">
