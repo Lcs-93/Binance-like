@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Chart from '../../components/Chart/Chart'
 import MiniChart from '../../components/MiniChart/MiniChart'
 import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line } from 'react-icons/ri'
+import Modal from '../../components/Modal/Modal';
 
 const formatNumber = (num) => {
   if (num >= 1e9) {
@@ -31,7 +32,14 @@ const ShowCrypto = () => {
   const [newComment, setNewComment] = useState('')
   const [comments, setComments] = useState([])
   const [purchaseAmount, setPurchaseAmount] = useState('')
+  const [saleAmount, setSaleAmount] = useState('')
   const [activeUser, setActiveUser] = useState(null)
+  const [isBuying, setIsBuying] = useState(true)
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: 'success',
+    message: ''
+  })
 
   useEffect(() => {
     const fetchData = async () => {
@@ -124,9 +132,71 @@ const ShowCrypto = () => {
     setError(null);
   };
 
+  const handleSale = () => {
+    if (!activeUser || !crypto) return;
+
+    const amount = parseFloat(saleAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    const currentAmount = activeUser.cryptos[crypto.symbol] || 0;
+    
+    if (amount > currentAmount) {
+      setError(`You only have ${currentAmount} ${crypto.symbol}`);
+      return;
+    }
+
+    const totalValue = amount * parseFloat(crypto.price_usd);
+    const updatedCash = activeUser.cash + totalValue;
+    const updatedCryptos = { ...activeUser.cryptos };
+    updatedCryptos[crypto.symbol] = currentAmount - amount;
+
+    if (updatedCryptos[crypto.symbol] === 0) {
+      delete updatedCryptos[crypto.symbol];
+    }
+
+    const updatedUser = {
+      ...activeUser,
+      cash: updatedCash,
+      cryptos: updatedCryptos
+    };
+
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+    setActiveUser(updatedUser);
+    setSaleAmount('');
+    setError(null);
+  };
+
   const getMaxPurchaseAmount = () => {
     if (!activeUser || !crypto) return 0;
     return activeUser.cash / parseFloat(crypto.price_usd);
+  };
+
+  const getMaxSaleAmount = () => {
+    if (!activeUser || !crypto) return 0;
+    return activeUser.cryptos[crypto.symbol] || 0;
+  };
+
+  const handleAmountChange = (e) => {
+    const value = e.target.value;
+    
+    if (value === '') {
+      isBuying ? setPurchaseAmount('') : setSaleAmount('');
+      return;
+    }
+
+    const numValue = parseFloat(value);
+    const maxAmount = isBuying 
+      ? getMaxPurchaseAmount()
+      : getMaxSaleAmount();
+
+    if (numValue > maxAmount) {
+      isBuying ? setPurchaseAmount(maxAmount.toString()) : setSaleAmount(maxAmount.toString());
+    } else {
+      isBuying ? setPurchaseAmount(value) : setSaleAmount(value);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -138,6 +208,30 @@ const ShowCrypto = () => {
       minute: '2-digit'
     }).format(date)
   }
+
+  const handleTransaction = () => {
+    if (isBuying) {
+      handlePurchase();
+    } else {
+      handleSale();
+    }
+  };
+
+  const updateUserData = (updatedUser) => {
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const updatedUsers = users.map(user => 
+      user.email === updatedUser.email ? updatedUser : user
+    );
+    localStorage.setItem('users', JSON.stringify(updatedUsers));
+
+    setActiveUser(updatedUser);
+  };
+
+  const closeModal = () => {
+    setModalState(prev => ({ ...prev, isOpen: false }));
+  };
 
   if (loading) return <div className="p-8">Loading...</div>
   if (error) return <div className="p-8">Error: {error}</div>
@@ -228,44 +322,76 @@ const ShowCrypto = () => {
           <div className="space-y-6">
             <div className="bg-gray/20 p-6 rounded-lg">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Buy {crypto.symbol}</h3>
-                <RiWallet3Line size={24} className="text-primary" />
+                <h3 className="text-lg font-medium">Transaction</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsBuying(true)}
+                    className={`px-4 py-2 rounded ${
+                      isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                    }`}
+                  >
+                    Buy
+                  </button>
+                  <button
+                    onClick={() => setIsBuying(false)}
+                    className={`px-4 py-2 rounded ${
+                      !isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                    }`}
+                  >
+                    Sell
+                  </button>
+                </div>
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm mb-2">Available Cash</label>
-                  <div className="text-xl font-bold">${formatNumber(activeUser?.cash || 0)}</div>
+                  <label className="block text-sm mb-2">
+                    {isBuying ? 'Available Cash' : `${crypto.symbol} Available`}
+                  </label>
+                  <div className="text-xl font-bold">
+                    {isBuying 
+                      ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
+                      : `${activeUser?.cryptos[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
+                    }
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm mb-2">Amount to Buy ({crypto.symbol})</label>
+                  <label className="block text-sm mb-2">
+                    Amount in {crypto.symbol}
+                  </label>
                   <input
                     type="number"
-                    value={purchaseAmount}
-                    onChange={(e) => setPurchaseAmount(e.target.value)}
-                    placeholder={`Max: ${formatNumber(getMaxPurchaseAmount())}`}
+                    value={isBuying ? purchaseAmount : saleAmount}
+                    onChange={handleAmountChange}
+                    min="0"
+                    max={isBuying ? getMaxPurchaseAmount() : getMaxSaleAmount()}
+                    step="any"
+                    placeholder={isBuying 
+                      ? `Max: ${getMaxPurchaseAmount().toFixed(8)}`
+                      : `Max: ${getMaxSaleAmount().toFixed(8)}`
+                    }
                     className="w-full bg-gray/10 p-2 rounded border border-gray/20 focus:outline-none focus:border-primary"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm mb-2">Total Cost</label>
-                  <div className="text-lg font-bold">
-                    ${formatNumber(purchaseAmount * crypto.price_usd || 0)}
+                {(isBuying ? purchaseAmount : saleAmount) && (
+                  <div className="p-4 bg-background rounded">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-400">Total Value</span>
+                      <span className="font-medium">
+                        ${(parseFloat(isBuying ? purchaseAmount : saleAmount) * parseFloat(crypto.price_usd)).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
-                </div>
-
-                {error && (
-                  <div className="text-red-500 text-sm">{error}</div>
                 )}
 
                 <button
-                  onClick={handlePurchase}
-                  disabled={!activeUser || !purchaseAmount || parseFloat(purchaseAmount) <= 0}
-                  className="w-full bg-primary text-white py-2 px-4 rounded hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleTransaction}
+                  disabled={!activeUser || !(isBuying ? purchaseAmount : saleAmount) || parseFloat(isBuying ? purchaseAmount : saleAmount) <= 0}
+                  className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Buy {crypto.symbol}
+                  {isBuying ? 'Buy' : 'Sell'} {crypto.symbol}
                 </button>
               </div>
             </div>
@@ -419,6 +545,12 @@ const ShowCrypto = () => {
           )}
         </div>
       </div>
+      <Modal 
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        type={modalState.type}
+        message={modalState.message}
+      />
     </div>
   )
 }

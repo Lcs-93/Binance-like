@@ -12,6 +12,12 @@ function Signup({ onSignupSuccess }) {
 
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
 
+  const generateUniqueId = () => {
+    const timestamp = Date.now();
+    const random = Math.floor(Math.random() * 10000);
+    return `${timestamp}-${random}`;
+  };
+
   const handleSignup = () => {
     setErrorMessage(''); 
 
@@ -31,6 +37,7 @@ function Signup({ onSignupSuccess }) {
     }
 
     const newUser = { 
+      id: generateUniqueId(),
       username, 
       email, 
       password,
