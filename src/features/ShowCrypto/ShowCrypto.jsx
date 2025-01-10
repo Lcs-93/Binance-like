@@ -228,7 +228,7 @@ const ShowCrypto = () => {
       ...activeUser,
       cash: updatedCash,
       cryptos: updatedCryptos,
-      lastUpdate: Date.now()
+      Update: Date.now()
     };
 
     localStorage.setItem('activeUser', JSON.stringify(updatedUser));

@@ -193,8 +193,25 @@ const Transactions = () => {
                     {transaction.type === 'external_exchange_received' && 'Réception'}
                   </span>
                 </div>
-                <div className="text-gray-400">
-                  {transaction.cryptoName || '-'}
+                <div className="text-gray-300">
+                  {transaction.cryptoName ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${transaction.cryptoName.toLowerCase()}.png`}
+                          alt={transaction.cryptoName}
+                          className="w-full h-full"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = `https://ui-avatars.com/api/?name=${transaction.cryptoName}&background=2b3139&color=fff&size=32&bold=true`;
+                          }}
+                        />
+                      </div>
+                      <span>{transaction.cryptoName}</span>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
                 </div>
                 <div className="text-right text-white">
                   {transaction.amount ? (

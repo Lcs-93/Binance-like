@@ -83,7 +83,7 @@ const LimitOrders = ({ limitOrders, activeUser, setLimitOrders, showToast }) => 
                   {order.amount} {order.symbol}
                 </div>
                 <div className="text-sm text-gray-light">
-                  @ ${order.limitPrice}
+                  ${order.limitPrice}
                 </div>
               </div>
             </div>
