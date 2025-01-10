@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Chart from '../../components/Chart/Chart'
 import MiniChart from '../../components/MiniChart/MiniChart'
-import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line , RiEditLine, RiDeleteBinLine } from 'react-icons/ri'
+import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line, RiEditLine, RiDeleteBinLine, RiThumbUpLine, RiThumbUpFill, RiArrowUpLine, RiArrowUpFill, RiArrowDownLine, RiArrowDownFill } from 'react-icons/ri'
 import Modal from '../../components/Modal/Modal';
 
 const formatNumber = (num) => {
@@ -35,6 +35,8 @@ const ShowCrypto = () => {
   const [saleAmount, setSaleAmount] = useState('')
   const [activeUser, setActiveUser] = useState(null)
   const [isBuying, setIsBuying] = useState(true)
+  const [likes, setLikes] = useState({})
+  const [votes, setVotes] = useState({})
   const [modalState, setModalState] = useState({
     isOpen: false,
     type: 'success',
@@ -51,6 +53,10 @@ const ShowCrypto = () => {
           setCrypto(data[0])
           const storedComments = JSON.parse(localStorage.getItem(`crypto-comments-${id}`)) || []
           setComments(storedComments)
+          const storedLikes = JSON.parse(localStorage.getItem(`crypto-likes-${id}`)) || {}
+          setLikes(storedLikes)
+          const storedVotes = JSON.parse(localStorage.getItem(`crypto-votes-${id}`)) || {}
+          setVotes(storedVotes)
           const allCryptosResponse = await fetch('https://api.coinlore.net/api/tickers/')
           const allCryptosData = await allCryptosResponse.json()
           if (allCryptosData && allCryptosData.data) {
@@ -84,6 +90,84 @@ const ShowCrypto = () => {
     setActiveUser(user)
   }, [])
 
+  const handleLike = (commentId) => {
+    if (!activeUser) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        message: 'Please log in to like comments'
+      });
+      return;
+    }
+
+    setLikes(prevLikes => {
+      const newLikes = { ...prevLikes };
+      const userLikes = newLikes[activeUser.id] || [];
+      
+      if (userLikes.includes(commentId)) {
+        newLikes[activeUser.id] = userLikes.filter(id => id !== commentId);
+      } else {
+        newLikes[activeUser.id] = [...userLikes, commentId];
+      }
+      
+      localStorage.setItem(`crypto-likes-${id}`, JSON.stringify(newLikes));
+      return newLikes;
+    });
+  };
+
+  const getLikeCount = (commentId) => {
+    return Object.values(likes).reduce((count, userLikes) => 
+      count + (userLikes.includes(commentId) ? 1 : 0), 0
+    );
+  };
+
+  const isLikedByUser = (commentId) => {
+    return activeUser && likes[activeUser.id]?.includes(commentId);
+  };
+
+  const handleVote = (commentId, voteType) => {
+    if (!activeUser) {
+      setModalState({
+        isOpen: true,
+        type: 'error',
+        message: 'Please log in to vote on comments'
+      });
+      return;
+    }
+
+    setVotes(prevVotes => {
+      const newVotes = { ...prevVotes };
+      const userVotes = newVotes[activeUser.id] || {};
+      
+      if (userVotes[commentId]) {
+        if (userVotes[commentId] === voteType) {
+          delete userVotes[commentId];
+        } else {
+          userVotes[commentId] = voteType;
+        }
+      } else {
+        userVotes[commentId] = voteType;
+      }
+      
+      newVotes[activeUser.id] = userVotes;
+      localStorage.setItem(`crypto-votes-${id}`, JSON.stringify(newVotes));
+      return newVotes;
+    });
+  };
+
+  const getVoteScore = (commentId) => {
+    return Object.values(votes).reduce((score, userVotes) => {
+      const vote = userVotes[commentId];
+      if (vote === 'up') return score + 1;
+      if (vote === 'down') return score - 1;
+      return score;
+    }, 0);
+  };
+
+  const getUserVote = (commentId) => {
+    return activeUser ? votes[activeUser.id]?.[commentId] : null;
+  };
+
   const handleAddComment = (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -116,6 +200,7 @@ const ShowCrypto = () => {
     setComments(updatedComments);
     localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
   };
+
   const handlePurchase = () => {
     if (!activeUser || !crypto) return;
 
@@ -155,7 +240,7 @@ const ShowCrypto = () => {
       setModalState({
         isOpen: true,
         type: 'error',
-        message: 'Veuillez entrer un montant valide'
+        message: 'Please enter a valid amount'
       });
       return;
     }
@@ -166,7 +251,7 @@ const ShowCrypto = () => {
       setModalState({
         isOpen: true,
         type: 'error',
-        message: `Vous ne possédez que ${currentAmount} ${crypto.symbol}`
+        message: `You only have ${currentAmount} ${crypto.symbol}`
       });
       return;
     }
@@ -195,7 +280,7 @@ const ShowCrypto = () => {
     setModalState({
       isOpen: true,
       type: 'success',
-      message: `${amount} ${crypto.symbol} ont été vendus pour $${totalValue.toFixed(2)}`
+      message: `${amount} ${crypto.symbol} sold for $${totalValue.toFixed(2)}`
     });
   };
 
@@ -272,6 +357,7 @@ const ShowCrypto = () => {
 
   return (
     <div className="p-8 space-y-8">
+      {/* Header Section */}
       <div className="flex items-center gap-6 mb-8">
         <img
           src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${crypto.symbol.toLowerCase()}.png`}
@@ -288,6 +374,7 @@ const ShowCrypto = () => {
         </div>
       </div>
 
+      {/* Price and Stats Section */}
       <div className="grid grid-cols-1 gap-8">
         <div className="space-y-6">
           <div className="bg-gray/20 p-6 rounded-lg">
@@ -330,114 +417,117 @@ const ShowCrypto = () => {
           </div>
         </div>
 
+        {/* Chart and Transaction Section */}
         <div className="border-b border-gray p-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">{crypto.name}</h1>
-            <span className="text-sm text-gray-400">{crypto.symbol}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <Chart 
-              data={crypto} 
-              color="#cdaf3a"
-              height={400}
-              showTooltip={true}
-              showAxis={true}
-            />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold">{crypto.name}</h1>
+              <span className="text-sm text-gray-400">{crypto.symbol}</span>
+            </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-gray/20 p-6 rounded-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">Transaction</h3>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsBuying(true)}
-                    className={`px-4 py-2 rounded ${
-                      isBuying ? 'bg-primary text-white' : 'bg-gray-600'
-                    }`}
-                  >
-                    Buy
-                  </button>
-                  <button
-                    onClick={() => setIsBuying(false)}
-                    className={`px-4 py-2 rounded ${
-                      !isBuying ? 'bg-primary text-white' : 'bg-gray-600'
-                    }`}
-                  >
-                    Sell
-                  </button>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm mb-2">
-                    {isBuying ? 'Available Cash' : `${crypto.symbol} Available`}
-                  </label>
-                  <div className="text-xl font-bold">
-                    {isBuying 
-                      ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
-                      : `${activeUser?.cryptos?.[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
-                    }
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <Chart 
+                data={crypto} 
+                color="#cdaf3a"
+                height={400}
+                showTooltip={true}
+                showAxis={true}
+              />
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-gray/20 p-6 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium">Transaction</h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsBuying(true)}
+                      className={`px-4 py-2 rounded ${
+                        isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                      }`}
+                    >
+                      Buy
+                    </button>
+                    <button
+                      onClick={() => setIsBuying(false)}
+                      className={`px-4 py-2 rounded ${
+                        !isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                      }`}
+                    >
+                      Sell
+                    </button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm mb-2">
-                    Amount in {crypto.symbol}
-                  </label>
-                  <input
-                    type="number"
-                    value={isBuying ? purchaseAmount : saleAmount}
-                    onChange={handleAmountChange}
-                    min="0"
-                    max={isBuying ? getMaxPurchaseAmount() : getMaxSaleAmount()}
-                    step="any"
-                    placeholder={isBuying 
-                      ? `Max: ${getMaxPurchaseAmount().toFixed(8)}`
-                      : `Max: ${getMaxSaleAmount().toFixed(8)}`
-                    }
-                    className="w-full bg-gray/10 p-2 rounded border border-gray/20 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                {(isBuying ? purchaseAmount : saleAmount) && (
-                  <div className="p-4 bg-background rounded">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-400">Total Value</span>
-                      <span className="font-medium">
-                        ${(parseFloat(isBuying ? purchaseAmount : saleAmount) * parseFloat(crypto.price_usd)).toFixed(2)}
-                      </span>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm mb-2">
+                      {isBuying ? 'Available Cash' : `${crypto.symbol} Available`}
+                    </label>
+                    <div className="text-xl font-bold">
+                      {isBuying 
+                        ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
+                        : `${activeUser?.cryptos?.[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
+                      }
                     </div>
                   </div>
-                )}
 
-                <button
-                  onClick={handleTransaction}
-                  disabled={!activeUser || !(isBuying ? purchaseAmount : saleAmount) || parseFloat(isBuying ? purchaseAmount : saleAmount) <= 0}
-                  className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isBuying ? 'Buy' : 'Sell'} {crypto.symbol}
-                </button>
-              </div>
-            </div>
+                  <div>
+                    <label className="block text-sm mb-2">
+                      Amount in {crypto.symbol}
+                    </label>
+                    <input
+                      type="number"
+                      value={isBuying ? purchaseAmount : saleAmount}
+                      onChange={handleAmountChange}
+                      min="0"
+                      max={isBuying ? getMaxPurchaseAmount() : getMaxSaleAmount()}
+                      step="any"
+                      placeholder={isBuying 
+                        ? `Max: ${getMaxPurchaseAmount().toFixed(8)}`
+                        : `Max: ${getMaxSaleAmount().toFixed(8)}`
+                      }
+                      className="w-full bg-gray/10 p-2 rounded border border-gray/20 focus:outline-none focus:border-primary"
+                    />
+                  </div>
 
-            <div className="bg-gray/20 p-6 rounded-lg">
-              <h3 className="text-lg font-medium mb-4">Your {crypto.symbol} Holdings</h3>
-              <div className="text-2xl font-bold">
-                {formatNumber(activeUser?.cryptos?.[crypto.symbol] || 0)} {crypto.symbol}
+                  {(isBuying ? purchaseAmount : saleAmount) && (
+                    <div className="p-4 bg-background rounded">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-400">Total Value</span>
+                        <span className="font-medium">
+                          ${(parseFloat(isBuying ? purchaseAmount : saleAmount) * parseFloat(crypto.price_usd)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleTransaction}
+                    disabled={!activeUser || !(isBuying ? purchaseAmount : saleAmount) || parseFloat(isBuying ? purchaseAmount : saleAmount) <= 0}
+                    className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isBuying ? 'Buy' : 'Sell'} {crypto.symbol}
+                  </button>
+                </div>
               </div>
-              <div className="text-sm text-gray-400">
-                ≈ ${formatNumber((activeUser?.cryptos?.[crypto.symbol] || 0) * crypto.price_usd)}
+
+              <div className="bg-gray/20 p-6 rounded-lg">
+                <h3 className="text-lg font-medium mb-4">Your {crypto.symbol} Holdings</h3>
+                <div className="text-2xl font-bold">
+                  {formatNumber(activeUser?.cryptos?.[crypto.symbol] || 0)} {crypto.symbol}
+                </div>
+                <div className="text-sm text-gray-400">
+                  ≈ ${formatNumber((activeUser?.cryptos?.[crypto.symbol] || 0) * crypto.price_usd)}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* Price Changes Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="bg-gray/20 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -486,6 +576,7 @@ const ShowCrypto = () => {
         </div>
       </div>
 
+      {/* Similar Cryptocurrencies Section */}
       <div className="space-y-4">
         <div className="text-xl font-medium text-white">Similar Cryptocurrencies</div>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -532,70 +623,118 @@ const ShowCrypto = () => {
         </div>
       </div>
 
+      {/* Comments Section */}
       <div className="p-8 space-y-8">
-      {/* Crypto Info */}
-      <div className="text-xl font-medium text-white mb-4">Comments</div>
+        <div className="text-xl font-medium text-white mb-4">Comments</div>
 
-      {/* Comment Form */}
-      <form onSubmit={handleAddComment} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
-          className="flex-1 bg-gray/50 rounded-lg py-2 px-4 text-white placeholder-gray-light focus:outline-none focus:ring-2 focus:ring-primary/50"
-        />
-        <button
-          type="submit"
-          disabled={!newComment.trim()}
-          className="bg-primary hover:bg-primary/90 text-background px-4 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RiSendPlaneFill />
-          Send
-        </button>
-      </form>
+        <form onSubmit={handleAddComment} className="flex gap-2 mb-6">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Add a comment..."
+            className="flex-1 bg-gray/50 rounded-lg py-2 px-4 text-white placeholder-gray-light focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            type="submit"
+            disabled={!newComment.trim()}
+            className="bg-primary hover:bg-primary/90 text-background px-4 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <RiSendPlaneFill />
+            Send
+          </button>
+        </form>
 
-      {/* Comment List */}
-      <div className="space-y-4">
-        {comments.length === 0 ? (
-          <div className="text-gray-light text-center py-8">
-            No comments yet. Be the first to comment!
-          </div>
-        ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="bg-gray/20 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <div className="text-sm text-gray-light">
-                  <span className="font-bold">{comment.username}</span> | {formatDate(comment.timestamp)}
+        <div className="space-y-4">
+          {comments.length === 0 ? (
+            <div className="text-gray-light text-center py-8">
+              No comments yet. Be the first to comment!
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className="bg-gray/20 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-sm text-gray-light">
+                    <span className="font-bold">{comment.username}</span> | {formatDate(comment.timestamp)}
+                  </div>
+                  <div className="text-sm text-gray-light">
+                    Price: ${comment.cryptoPrice.toLocaleString()}
+                  </div>
                 </div>
-                <div className="text-sm text-gray-light">
-                  Price: ${comment.cryptoPrice.toLocaleString()}
+                <div className="text-white mb-4">{comment.text}</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    {comment.userId === activeUser?.id && (
+                      <>
+                        <button
+                          onClick={() => {
+                            const newText = prompt('Edit your comment:', comment.text);
+                            if (newText) handleEditComment(comment.id, newText);
+                          }}
+                          className="text-blue-500 hover:text-blue-400 transition-colors"
+                        >
+                          <RiEditLine size={20} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          className="text-red-500 hover:text-red-400 transition-colors"
+                        >
+                          <RiDeleteBinLine size={20} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {/* Système de votes */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleVote(comment.id, 'up')}
+                        className={`p-1 rounded-full transition-colors ${
+                          getUserVote(comment.id) === 'up'
+                            ? 'text-green-500'
+                            : 'text-gray-400 hover:text-gray-300'
+                        }`}
+                      >
+                        {getUserVote(comment.id) === 'up' ? <RiArrowUpFill size={20} /> : <RiArrowUpLine size={20} />}
+                      </button>
+                      <span className={`font-medium ${
+                        getVoteScore(comment.id) > 0 
+                          ? 'text-green -500' 
+                          : getVoteScore(comment.id) < 0 
+                            ? 'text-red-500' 
+                            : 'text-gray-400'
+                      }`}>
+                        {getVoteScore(comment.id)}
+                      </span>
+                      <button
+                        onClick={() => handleVote(comment.id, 'down')}
+                        className={`p-1 rounded-full transition-colors ${
+                          getUserVote(comment.id) === 'down'
+                            ? 'text-red-500'
+                            : 'text-gray-400 hover:text-gray-300'
+                        }`}
+                      >
+                        {getUserVote(comment.id) === 'down' ? <RiArrowDownFill size={20} /> : <RiArrowDownLine size={20} />}
+                      </button>
+                    </div>
+                    {/* Système de likes */}
+                    <button
+                      onClick={() => handleLike(comment.id)}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full transition-colors ${
+                        isLikedByUser(comment.id)
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-gray-700/50 text-gray-400 hover:bg-gray-700'
+                      }`}
+                    >
+                      {isLikedByUser(comment.id) ? <RiThumbUpFill /> : <RiThumbUpLine />}
+                      <span>{getLikeCount(comment.id)}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="text-white mb-4">{comment.text}</div>
-              {comment.userId === activeUser?.id && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      const newText = prompt('Edit your comment:', comment.text);
-                      if (newText) handleEditComment(comment.id, newText);
-                    }}
-                    className="text-blue-500 hover:underline"
-                  >
-                   <RiEditLine size={20} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteComment(comment.id)}
-                    className="text-red-500 hover:underline"
-                  >
-                    <RiDeleteBinLine size={20} />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
       </div>
       <Modal 
         isOpen={modalState.isOpen}
