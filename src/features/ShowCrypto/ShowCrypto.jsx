@@ -312,7 +312,6 @@ const ShowCrypto = () => {
 
     userLimitOrders.forEach(order => {
       if (currentPrice <= order.limitPrice) {
-        // Exécuter l'ordre
         const updatedCash = activeUser.cash - order.totalCost;
         const updatedCryptos = { ...activeUser.cryptos };
         updatedCryptos[order.symbol] = (updatedCryptos[order.symbol] || 0) + order.amount;
@@ -336,7 +335,6 @@ const ShowCrypto = () => {
       }
     });
 
-    // Mettre à jour les ordres expirés
     const expiredOrders = limitOrders.filter(order => 
       order.status === 'active' && 
       new Date(order.expiryDate) <= currentDate
