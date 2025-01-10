@@ -1,6 +1,5 @@
 import { RiWallet3Line, RiMoneyDollarCircleLine, RiCloseLine } from 'react-icons/ri';
 import { useState, useEffect, useRef } from 'react';
-import Modal from './Modal/Modal';
 import Toast from './Toast/Toast';
 
 const RightSidebar = ({ isOpen, onClose }) => {
@@ -92,10 +91,6 @@ const RightSidebar = ({ isOpen, onClose }) => {
     setWithdrawAmount('');
     setShowWithdrawForm(false);
     showToast(`Retrait de $${amount.toFixed(2)} effectué avec succès`);
-  };
-
-  const closeModal = () => {
-    setModalState(prev => ({ ...prev, isOpen: false }));
   };
 
   return (

@@ -9,6 +9,7 @@ import Market from './features/Market/Market';
 import Transactions from './features/Transactions/Transactions';
 import ShowCrypto from './features/ShowCrypto/ShowCrypto';
 import Topbar from './components/Topbar';
+import Portfolio from './features/Portfolio/Portfolio';
 import './App.css';
 
 function App() {
@@ -58,6 +59,9 @@ function App() {
                   <Route path="/market" element={<Market />} />
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/crypto/:id" element={<ShowCrypto />} />
+                  <Route path="/actifs" element={
+                      <Portfolio />
+                  } />
                   <Route path="/" element={<Navigate to="/home" replace />} />
                 </>
               ) : (
