@@ -21,15 +21,28 @@ const Market = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
   const navigate = useNavigate()
 
   const fetchCryptoData = async () => {
     try {
+      const now = Date.now()
+      if (now - lastUpdate < 2000) {
+        return
+      }
+      
       const response = await fetch('https://api.coinlore.net/api/tickers/')
       const data = await response.json()
       if (data && data.data) {
         setCryptos(data.data)
         setError(null)
+        setLastUpdate(now)
+        
+        const activeUser = JSON.parse(localStorage.getItem('activeUser'))
+        if (activeUser) {
+          activeUser.lastUpdate = now
+          localStorage.setItem('activeUser', JSON.stringify(activeUser))
+        }
       }
     } catch (error) {
       setError(error.message)
@@ -102,8 +115,8 @@ const Market = () => {
               </div>
               <div className="flex items-center gap-8">
                 <div className="w-32 text-right">
-                  <div className="text-white font-medium">
-                    ${parseFloat(crypto.price_usd).toLocaleString()}
+                  <div className="text-lg font-semibold text-white">
+                    ${parseFloat(crypto.price_usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <div className={`text-sm ${parseFloat(crypto.percent_change_24h) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {parseFloat(crypto.percent_change_24h) >= 0 ? '+' : ''}

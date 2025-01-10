@@ -41,6 +41,7 @@ const ShowCrypto = () => {
   const [activeUser, setActiveUser] = useState(null)
   const [isBuying, setIsBuying] = useState(true)
   const [isLimitOrder, setIsLimitOrder] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState(Date.now())
   const [toast, setToast] = useState({
     show: false,
     message: '',
@@ -53,13 +54,18 @@ const ShowCrypto = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const now = Date.now()
+
         setLoading(true)
         const response = await fetch(`https://api.coinlore.net/api/ticker/?id=${id}`)
         const data = await response.json()
         if (data && data.length > 0) {
           setCrypto(data[0])
+          setLastUpdate(now)
+          
           const storedComments = JSON.parse(localStorage.getItem(`crypto-comments-${id}`)) || []
           setComments(storedComments)
+          
           const allCryptosResponse = await fetch('https://api.coinlore.net/api/tickers/')
           const allCryptosData = await allCryptosResponse.json()
           if (allCryptosData && allCryptosData.data) {
@@ -86,6 +92,8 @@ const ShowCrypto = () => {
     }
 
     fetchData()
+    const interval = setInterval(fetchData, 5000)
+    return () => clearInterval(interval)
   }, [id])
 
   useEffect(() => {
@@ -94,6 +102,24 @@ const ShowCrypto = () => {
     const storedLimitOrders = JSON.parse(localStorage.getItem(`limit-orders-${user?.email}`)) || []
     setLimitOrders(storedLimitOrders)
   }, [])
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const user = JSON.parse(localStorage.getItem('activeUser'))
+      if (user?.lastUpdate !== activeUser?.lastUpdate) {
+        setActiveUser(user)
+      }
+    }
+
+    handleStorageChange()
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('assetsUpdated', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('assetsUpdated', handleStorageChange)
+    }
+  }, [activeUser])
 
   const handleAddComment = (e) => {
     e.preventDefault();
@@ -143,15 +169,18 @@ const ShowCrypto = () => {
     }
 
     const updatedCash = activeUser.cash - totalCost;
-
     const updatedCryptos = { ...activeUser.cryptos };
     updatedCryptos[crypto.symbol] = (updatedCryptos[crypto.symbol] || 0) + amount;
 
     const updatedUser = {
       ...activeUser,
       cash: updatedCash,
-      cryptos: updatedCryptos
+      cryptos: updatedCryptos,
+      lastUpdate: Date.now()
     };
+
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+    setActiveUser(updatedUser);
 
     addTransaction({
       type: 'buy',
@@ -163,8 +192,6 @@ const ShowCrypto = () => {
       status: 'completed'
     });
 
-    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
-    setActiveUser(updatedUser);
     setPurchaseAmount('');
     setError(null);
     showToast(`Achat de ${amount} ${crypto.symbol} effectué avec succès pour $${totalCost.toFixed(2)}`);
@@ -203,8 +230,12 @@ const ShowCrypto = () => {
     const updatedUser = {
       ...activeUser,
       cash: updatedCash,
-      cryptos: updatedCryptos
+      cryptos: updatedCryptos,
+      lastUpdate: Date.now()
     };
+
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+    setActiveUser(updatedUser);
 
     addTransaction({
       type: 'sell',
@@ -216,8 +247,6 @@ const ShowCrypto = () => {
       status: 'completed'
     });
 
-    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
-    setActiveUser(updatedUser);
     setSaleAmount('');
     setError(null);
     showToast(`Vente de ${amount} ${crypto.symbol} effectuée avec succès pour $${totalValue.toFixed(2)}`);
@@ -417,8 +446,8 @@ const ShowCrypto = () => {
           <div className="bg-gray/20 p-4 rounded-lg mb-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <div className="text-3xl font-bold text-white">
-                  ${parseFloat(crypto.price_usd).toLocaleString()}
+                <div className="text-4xl font-bold text-white mb-4">
+                  ${parseFloat(crypto.price_usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <div className={`text-lg ${parseFloat(crypto.percent_change_24h) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                   {parseFloat(crypto.percent_change_24h) >= 0 ? '+' : ''}{crypto.percent_change_24h}%

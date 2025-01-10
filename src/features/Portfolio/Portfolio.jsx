@@ -8,30 +8,55 @@ const Portfolio = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('activeUser'));
-    setActiveUser(user);
+    const handleStorageChange = () => {
+      const user = JSON.parse(localStorage.getItem('activeUser'));
+      setActiveUser(user);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('assetsUpdated', handleStorageChange);
+
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('assetsUpdated', handleStorageChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    let intervalId;
 
     const fetchCryptoData = async () => {
       try {
         const response = await fetch('https://api.coinlore.net/api/tickers/');
         const data = await response.json();
-        setCryptoData(data.data);
+        if (data && data.data) {
+          setCryptoData(data.data);
+        }
       } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
-        
       } finally {
         setLoading(false);
       }
     };
 
     fetchCryptoData();
+
+    intervalId = setInterval(fetchCryptoData, 30000);
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, []);
 
   if (loading) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-6">Mes Actifs</h1>
-        <div>Chargement...</div>
+        <h1 className="text-2xl font-bold mb-6 text-white">Mes Actifs</h1>
+        <div className="text-gray-400">Chargement...</div>
       </div>
     );
   }
@@ -39,8 +64,8 @@ const Portfolio = () => {
   if (!activeUser) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-6">Mes Actifs</h1>
-        <div>Veuillez vous connecter pour voir vos actifs</div>
+        <h1 className="text-2xl font-bold mb-6 text-white">Mes Actifs</h1>
+        <div className="text-gray-400">Veuillez vous connecter pour voir vos actifs</div>
       </div>
     );
   }
@@ -67,7 +92,7 @@ const Portfolio = () => {
   if (userCryptos.length === 0) {
     return (
       <div className="p-8">
-        <h1 className="text-2xl font-bold mb-6">Mes Actifs</h1>
+        <h1 className="text-2xl font-bold mb-6 text-white">Mes Actifs</h1>
         <div className="text-center py-12">
           <p className="text-gray-400 mb-4">Vous ne possédez aucune cryptomonnaie pour le moment</p>
           <Link to="/market" className="text-primary hover:text-primary/80">
@@ -82,7 +107,7 @@ const Portfolio = () => {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Mes Actifs</h1>
+      <h1 className="text-2xl font-bold mb-6 text-white">Mes Actifs</h1>
       
       <div className="space-y-6">
         <div className="bg-gray/20 rounded-lg overflow-hidden">

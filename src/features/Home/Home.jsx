@@ -37,6 +37,16 @@ const Home = () => {
   })
   const navigate = useNavigate()
 
+  const formatLastUpdate = (timestamp) => {
+    if (!timestamp) return 'Jamais';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('activeUser'));
     setActiveUser(user);
@@ -46,84 +56,87 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    if (activeUser && cryptos.length > 0) {
-      const cashValue = activeUser.cash || 0;
-      let cryptoValue = 0;
-
-      Object.entries(activeUser.cryptos || {}).forEach(([symbol, amount]) => {
-        const crypto = cryptos.find(c => c.symbol === symbol);
-        if (crypto) {
-          cryptoValue += amount * crypto.price_usd;
+    const updatePortfolioValues = () => {
+      if (activeUser && cryptos.length > 0) {
+        const now = Date.now();
+        if (lastUpdate && now - lastUpdate < 300000) {
+          return;
         }
-      });
 
-      const totalValue = cashValue + cryptoValue;
+        const cashValue = activeUser.cash || 0;
+        let cryptoValue = 0;
 
-      const currentTime = new Date().toISOString();
-      const newHistory = [...portfolioValue.history, { timestamp: currentTime, value: totalValue }]
-        .slice(-24);
+        Object.entries(activeUser.cryptos || {}).forEach(([symbol, amount]) => {
+          const crypto = cryptos.find(c => c.symbol === symbol);
+          if (crypto) {
+            cryptoValue += amount * crypto.price_usd;
+          }
+        });
 
-      const dailyChange = calculateChange(totalValue, newHistory);
+        const totalValue = cashValue + cryptoValue;
+        const currentTime = new Date().toISOString();
 
-      localStorage.setItem(`portfolio_history_${activeUser.email}`, JSON.stringify(newHistory));
+        const newHistory = [...portfolioValue.history, { timestamp: currentTime, value: totalValue }]
+          .slice(-288);
 
-      setPortfolioValue({
-        cashValue,
-        cryptoValue,
-        totalValue,
-        history: newHistory,
-        dailyChange
-      });
-    }
-  }, [activeUser, cryptos]);
+        const dailyChange = calculateChange(totalValue, newHistory);
+
+        localStorage.setItem(`portfolio_history_${activeUser.email}`, JSON.stringify(newHistory));
+        setLastUpdate(now);
+
+        setPortfolioValue({
+          cashValue,
+          cryptoValue,
+          totalValue,
+          history: newHistory,
+          dailyChange
+        });
+      }
+    };
+
+    updatePortfolioValues();
+    const interval = setInterval(updatePortfolioValues, 300000);
+
+    return () => clearInterval(interval);
+  }, [activeUser, cryptos, lastUpdate]);
 
   useEffect(() => {
     const handleStorageChange = () => {
       const user = JSON.parse(localStorage.getItem('activeUser'));
       if (user) {
         setActiveUser(user);
-        const portfolioHistory = JSON.parse(localStorage.getItem(`portfolio_history_${user.email}`)) || [];
-        setPortfolioValue(prev => ({ ...prev, history: portfolioHistory }));
       }
     };
 
-    const interval = setInterval(() => {
-      const user = JSON.parse(localStorage.getItem('activeUser'));
-      if (user && (!activeUser || user.cash !== activeUser.cash || JSON.stringify(user.cryptos) !== JSON.stringify(activeUser.cryptos))) {
-        setActiveUser(user);
-      }
-    }, 1000);
-
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('assetsUpdated', handleStorageChange);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
+      window.removeEventListener('assetsUpdated', handleStorageChange);
     };
-  }, [activeUser]);
-
-  useEffect(() => {
-    fetchCryptoData();
-    const interval = setInterval(fetchCryptoData, REFRESH_INTERVAL);
-    return () => clearInterval(interval);
   }, []);
 
-  const fetchCryptoData = async () => {
-    try {
-      const response = await fetch('https://api.coinlore.net/api/tickers/')
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
+  useEffect(() => {
+    const fetchCryptoData = async () => {
+      try {
+        const response = await fetch('https://api.coinlore.net/api/tickers/')
+        const data = await response.json()
+        if (data && data.data) {
+          setCryptos(data.data)
+          setError(null)
+        }
+      } catch (error) {
+        setError(error.message)
+      } finally {
+        setLoading(false)
       }
-      const data = await response.json()
-      setCryptos(data.data)
-      setLastUpdate(new Date().toLocaleTimeString())
-      setError(null)
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoading(false)
     }
-  }
+
+    fetchCryptoData()
+    const interval = setInterval(fetchCryptoData, REFRESH_INTERVAL)
+    return () => clearInterval(interval)
+  }, [])
 
   if (loading && !cryptos.length) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>
@@ -181,8 +194,8 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-40">
-                  <div className="text-xl font-medium text-white">
-                    ${portfolioValue.cryptoValue.toLocaleString()}
+                  <div className="text-2xl font-bold text-white">
+                    ${portfolioValue.cryptoValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
                 </div>
@@ -200,8 +213,8 @@ const Home = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-40">
-                  <div className="text-xl font-medium text-white">
-                    ${portfolioValue.cashValue.toLocaleString()}
+                  <div className="text-2xl font-bold text-white">
+                    ${portfolioValue.cashValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                   <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-primary transition-colors" />
                 </div>
@@ -216,7 +229,7 @@ const Home = () => {
           <h1 className="text-2xl font-bold text-white mb-4">Cryptocurrency Prices</h1>
           {lastUpdate && (
             <div className="text-sm text-primary/50">
-              Last updated: {lastUpdate}
+              Last updated: {formatLastUpdate(lastUpdate)}
             </div>
           )}
         </div>
@@ -261,7 +274,7 @@ const Home = () => {
                       </div>
                     </td>
                     <td className="text-right py-4 px-4 text-white">
-                      ${parseFloat(crypto.price_usd).toLocaleString()}
+                      ${parseFloat(crypto.price_usd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="text-right py-4 px-4">
                       <span className={`px-2 py-1 rounded ${priceChange >= 0
