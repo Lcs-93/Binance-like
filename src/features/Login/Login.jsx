@@ -36,7 +36,7 @@ function Login({ onLoginSuccess }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <div className="mb-6">
@@ -45,13 +45,13 @@ function Login({ onLoginSuccess }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
-            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <button
           onClick={handleLogin}
           disabled={loading || !email || !password}
-          className={`w-full py-3 ${loading ? 'bg-gray-400' : 'bg-blue-600'} text-white font-bold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+          className={`w-full py-3 ${loading ? 'bg-gray-400' : 'bg-primary'} text-white font-bold rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-blue-500`}
         >
           {loading ? 'Chargement...' : 'Se connecter'}
         </button>
@@ -60,7 +60,7 @@ function Login({ onLoginSuccess }) {
             Vous n'avez pas de compte ?{' '}
             <button
               onClick={() => navigate('/signup')}
-              className="text-blue-500 hover:underline"
+              className="text-primary hover:underline"
             >
               Inscrivez-vous ici
             </button>
