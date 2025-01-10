@@ -1,6 +1,6 @@
 const PriceStats = ({ crypto, calculatePriceAtChange }) => {
   return (
-    <div className="grid w-full grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+    <div className="grid w-full grid-cols-1 md:grid-cols-3 gap-4 mt-6 px-8">
       <div className="bg-gray/20 p-4 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="text-gray-400">Last Hour</div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { RiSendPlaneFill, RiEditLine, RiDeleteBinLine, RiThumbUpLine, RiThumbUpFill, RiArrowUpLine, RiArrowUpFill, RiArrowDownLine, RiArrowDownFill } from 'react-icons/ri';
 
 const CryptoComments = ({ 
@@ -12,9 +13,41 @@ const CryptoComments = ({
   activeUser, 
   formatDate 
 }) => {
+  const [sortBy, setSortBy] = useState('date');
+
+  const getSortedComments = () => {
+    return [...comments].sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.timestamp) - new Date(a.timestamp);
+        case 'likes':
+          return (b.likes?.length || 0) - (a.likes?.length || 0);
+        case 'votes':
+          const getVoteScore = (comment) => {
+            return comment.votes?.reduce((acc, vote) => 
+              acc + (vote.type === 'up' ? 1 : -1), 0) || 0;
+          };
+          return getVoteScore(b) - getVoteScore(a);
+        default:
+          return 0;
+      }
+    });
+  };
+
   return (
     <div className="p-8 space-y-8">
-      <div className="text-xl font-medium text-white mb-4">Comments</div>
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-xl font-medium text-white">Comments</div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="bg-gray/50 text-white rounded-lg py-1 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+          <option value="date">Latest</option>
+          <option value="likes">Most Liked</option>
+          <option value="votes">Most Voted</option>
+        </select>
+      </div>
 
       <form onSubmit={handleAddComment} className="flex gap-2 mb-6">
         <input
@@ -35,12 +68,12 @@ const CryptoComments = ({
       </form>
 
       <div className="space-y-4">
-        {comments.length === 0 ? (
+        {getSortedComments().length === 0 ? (
           <div className="text-gray-light text-center py-8">
             No comments yet. Be the first to comment!
           </div>
         ) : (
-          comments.map((comment) => (
+          getSortedComments().map((comment) => (
             <div key={comment.id} className="bg-gray/20 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-2">
                 <div className="text-sm text-gray-light">

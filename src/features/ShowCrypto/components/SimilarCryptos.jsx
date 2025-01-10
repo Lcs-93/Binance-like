@@ -5,7 +5,7 @@ const SimilarCryptos = ({ similarCryptos }) => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-4 mt-12">
+    <div className="space-y-4 mt-12 px-8">
       <div className="text-xl font-medium text-white">Similar Cryptocurrencies</div>
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {similarCryptos.map(crypto => (
