@@ -1,6 +1,7 @@
 import { RiWallet3Line, RiMoneyDollarCircleLine, RiCloseLine } from 'react-icons/ri';
 import { useState, useEffect, useRef } from 'react';
 import Modal from './Modal/Modal';
+import Toast from './Toast/Toast';
 
 const RightSidebar = ({ isOpen, onClose }) => {
   const [activeUser, setActiveUser] = useState(null);
@@ -8,12 +9,12 @@ const RightSidebar = ({ isOpen, onClose }) => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [showDepositForm, setShowDepositForm] = useState(false);
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
-  const sidebarRef = useRef(null);
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    type: 'success',
-    message: ''
+  const [toast, setToast] = useState({
+    show: false,
+    message: '',
+    type: 'success'
   });
+  const sidebarRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -33,103 +34,64 @@ const RightSidebar = ({ isOpen, onClose }) => {
     setActiveUser(user);
   }, []);
 
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 5000);
+  };
+
   const handleDeposit = () => {
     if (!depositAmount || !activeUser) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Veuillez entrer un montant valide'
-      });
+      showToast('Veuillez entrer un montant valide', 'error');
       return;
     }
 
     const amount = parseFloat(depositAmount);
     if (amount <= 0) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Le montant doit être supérieur à 0'
-      });
+      showToast('Le montant doit être supérieur à 0', 'error');
       return;
     }
 
-    const currentUser = JSON.parse(localStorage.getItem('activeUser'));
-    
-    currentUser.cash = (currentUser.cash || 0) + amount;
-    
-    localStorage.setItem('activeUser', JSON.stringify(currentUser));
+    const updatedUser = {
+      ...activeUser,
+      cash: (activeUser.cash || 0) + amount
+    };
 
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const updatedUsers = users.map(user => 
-      user.email === currentUser.email 
-        ? { ...user, cash: currentUser.cash }
-        : user
-    );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-    setActiveUser(currentUser);
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+    setActiveUser(updatedUser);
     setDepositAmount('');
     setShowDepositForm(false);
-    
-    setModalState({
-      isOpen: true,
-      type: 'success',
-      message: `${amount}$ ont été déposés sur votre compte`
-    });
+    showToast(`Dépôt de $${amount.toFixed(2)} effectué avec succès`);
   };
 
   const handleWithdraw = () => {
     if (!withdrawAmount || !activeUser) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Veuillez entrer un montant valide'
-      });
+      showToast('Veuillez entrer un montant valide', 'error');
       return;
     }
 
     const amount = parseFloat(withdrawAmount);
     if (amount <= 0) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Le montant doit être supérieur à 0'
-      });
+      showToast('Le montant doit être supérieur à 0', 'error');
       return;
     }
 
     if (amount > activeUser.cash) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Fonds insuffisants'
-      });
+      showToast('Fonds insuffisants pour ce retrait', 'error');
       return;
     }
 
-    const currentUser = JSON.parse(localStorage.getItem('activeUser'));
-    
-    currentUser.cash = (currentUser.cash || 0) - amount;
-    
-    localStorage.setItem('activeUser', JSON.stringify(currentUser));
+    const updatedUser = {
+      ...activeUser,
+      cash: activeUser.cash - amount
+    };
 
-    const users = JSON.parse(localStorage.getItem('users')) || [];
-    const updatedUsers = users.map(user => 
-      user.email === currentUser.email 
-        ? { ...user, cash: currentUser.cash }
-        : user
-    );
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
-
-    setActiveUser(currentUser);
+    localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+    setActiveUser(updatedUser);
     setWithdrawAmount('');
     setShowWithdrawForm(false);
-    
-    setModalState({
-      isOpen: true,
-      type: 'success',
-      message: `${amount}$ ont été retirés de votre compte`
-    });
+    showToast(`Retrait de $${amount.toFixed(2)} effectué avec succès`);
   };
 
   const closeModal = () => {
@@ -272,12 +234,12 @@ const RightSidebar = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        type={modalState.type}
-        message={modalState.message}
-      />
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+        />
+      )}
     </>
   );
 };

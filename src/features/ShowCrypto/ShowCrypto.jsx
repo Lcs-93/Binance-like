@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import Chart from '../../components/Chart/Chart'
 import MiniChart from '../../components/MiniChart/MiniChart'
 import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line } from 'react-icons/ri'
-import Modal from '../../components/Modal/Modal';
+import Toast from '../../components/Toast/Toast';
 
 const formatNumber = (num) => {
   if (num >= 1e9) {
@@ -35,11 +35,15 @@ const ShowCrypto = () => {
   const [saleAmount, setSaleAmount] = useState('')
   const [activeUser, setActiveUser] = useState(null)
   const [isBuying, setIsBuying] = useState(true)
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    type: 'success',
-    message: ''
+  const [isLimitOrder, setIsLimitOrder] = useState(false)
+  const [toast, setToast] = useState({
+    show: false,
+    message: '',
+    type: 'success'
   })
+  const [limitPrice, setLimitPrice] = useState('')
+  const [limitOrders, setLimitOrders] = useState([])
+  const [limitDate, setLimitDate] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,6 +86,8 @@ const ShowCrypto = () => {
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('activeUser'))
     setActiveUser(user)
+    const storedLimitOrders = JSON.parse(localStorage.getItem(`limit-orders-${user?.email}`)) || []
+    setLimitOrders(storedLimitOrders)
   }, [])
 
   const handleAddComment = (e) => {
@@ -106,13 +112,13 @@ const ShowCrypto = () => {
 
     const amount = parseFloat(purchaseAmount);
     if (isNaN(amount) || amount <= 0) {
-      setError('Please enter a valid amount');
+      showToast('Veuillez entrer un montant valide', 'error');
       return;
     }
 
     const totalCost = amount * parseFloat(crypto.price_usd);
     if (totalCost > activeUser.cash) {
-      setError('Insufficient funds');
+      showToast('Fonds insuffisants pour cet achat', 'error');
       return;
     }
 
@@ -130,6 +136,7 @@ const ShowCrypto = () => {
     setActiveUser(updatedUser);
     setPurchaseAmount('');
     setError(null);
+    showToast(`Achat de ${amount} ${crypto.symbol} effectué avec succès pour $${totalCost.toFixed(2)}`);
   };
 
   const handleSale = () => {
@@ -137,22 +144,14 @@ const ShowCrypto = () => {
 
     const amount = parseFloat(saleAmount);
     if (isNaN(amount) || amount <= 0) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: 'Veuillez entrer un montant valide'
-      });
+      showToast('Veuillez entrer un montant valide', 'error');
       return;
     }
 
     const currentAmount = activeUser.cryptos?.[crypto.symbol] || 0;
     
     if (amount > currentAmount) {
-      setModalState({
-        isOpen: true,
-        type: 'error',
-        message: `Vous ne possédez que ${currentAmount} ${crypto.symbol}`
-      });
+      showToast(`Vous ne possédez que ${currentAmount} ${crypto.symbol}`, 'error');
       return;
     }
 
@@ -177,11 +176,7 @@ const ShowCrypto = () => {
     };
 
     updateUserData(updatedUser);
-    setModalState({
-      isOpen: true,
-      type: 'success',
-      message: `${amount} ${crypto.symbol} ont été vendus pour $${totalValue.toFixed(2)}`
-    });
+    showToast(`Vente de ${amount} ${crypto.symbol} effectuée avec succès pour $${totalValue.toFixed(2)}`);
   };
 
   const getMaxPurchaseAmount = () => {
@@ -244,9 +239,119 @@ const ShowCrypto = () => {
     setActiveUser(updatedUser);
   };
 
-  const closeModal = () => {
-    setModalState(prev => ({ ...prev, isOpen: false }));
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 5000);
   };
+
+  const handleLimitOrder = () => {
+    if (!activeUser || !crypto) return;
+
+    const amount = parseFloat(purchaseAmount);
+    const price = parseFloat(limitPrice);
+    const expiryDate = new Date(limitDate);
+
+    if (isNaN(amount) || amount <= 0) {
+      showToast('Veuillez entrer un montant valide', 'error');
+      return;
+    }
+
+    if (isNaN(price) || price <= 0) {
+      showToast('Veuillez entrer un prix limite valide', 'error');
+      return;
+    }
+
+    if (!limitDate || expiryDate < new Date()) {
+      showToast('Veuillez entrer une date limite valide', 'error');
+      return;
+    }
+
+    const totalCost = amount * price;
+    if (totalCost > activeUser.cash) {
+      showToast('Fonds insuffisants pour cet ordre limite', 'error');
+      return;
+    }
+
+    const newLimitOrder = {
+      id: Date.now(),
+      cryptoId: crypto.id,
+      symbol: crypto.symbol,
+      amount,
+      limitPrice: price,
+      totalCost,
+      userEmail: activeUser.email,
+      status: 'active',
+      expiryDate: expiryDate.toISOString()
+    };
+
+    const updatedLimitOrders = [...limitOrders, newLimitOrder];
+    localStorage.setItem(`limit-orders-${activeUser.email}`, JSON.stringify(updatedLimitOrders));
+    setLimitOrders(updatedLimitOrders);
+    setPurchaseAmount('');
+    setLimitPrice('');
+    setLimitDate('');
+    setIsLimitOrder(false);
+
+    showToast(`Ordre limite placé pour ${amount} ${crypto.symbol} à $${price}, valable jusqu'au ${new Date(limitDate).toLocaleDateString()}`);
+  };
+
+  useEffect(() => {
+    if (!crypto || !activeUser || limitOrders.length === 0) return;
+
+    const currentPrice = parseFloat(crypto.price_usd);
+    const currentDate = new Date();
+    
+    const userLimitOrders = limitOrders.filter(order => 
+      order.status === 'active' && 
+      order.userEmail === activeUser.email &&
+      order.cryptoId === crypto.id &&
+      new Date(order.expiryDate) > currentDate
+    );
+
+    userLimitOrders.forEach(order => {
+      if (currentPrice <= order.limitPrice) {
+        // Exécuter l'ordre
+        const updatedCash = activeUser.cash - order.totalCost;
+        const updatedCryptos = { ...activeUser.cryptos };
+        updatedCryptos[order.symbol] = (updatedCryptos[order.symbol] || 0) + order.amount;
+
+        const updatedUser = {
+          ...activeUser,
+          cash: updatedCash,
+          cryptos: updatedCryptos
+        };
+
+        localStorage.setItem('activeUser', JSON.stringify(updatedUser));
+        setActiveUser(updatedUser);
+
+        const updatedOrders = limitOrders.map(o => 
+          o.id === order.id ? { ...o, status: 'executed' } : o
+        );
+        localStorage.setItem(`limit-orders-${activeUser.email}`, JSON.stringify(updatedOrders));
+        setLimitOrders(updatedOrders);
+
+        showToast(`Ordre limite exécuté : Achat de ${order.amount} ${order.symbol} à $${order.limitPrice}`);
+      }
+    });
+
+    // Mettre à jour les ordres expirés
+    const expiredOrders = limitOrders.filter(order => 
+      order.status === 'active' && 
+      new Date(order.expiryDate) <= currentDate
+    );
+
+    if (expiredOrders.length > 0) {
+      const updatedOrders = limitOrders.map(order => 
+        new Date(order.expiryDate) <= currentDate && order.status === 'active'
+          ? { ...order, status: 'expired' }
+          : order
+      );
+      localStorage.setItem(`limit-orders-${activeUser.email}`, JSON.stringify(updatedOrders));
+      setLimitOrders(updatedOrders);
+    }
+  }, [crypto?.price_usd]);
 
   if (loading) return <div className="p-8">Loading...</div>
   if (error) return <div className="p-8">Error: {error}</div>
@@ -340,86 +445,138 @@ const ShowCrypto = () => {
                 <h3 className="text-lg font-medium">Transaction</h3>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setIsBuying(true)}
-                    className={`px-4 py-2 rounded ${
-                      isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                    onClick={() => {
+                      setIsBuying(true);
+                      setIsLimitOrder(false);
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                      isBuying && !isLimitOrder ? 'bg-primary text-white' : 'bg-gray-700 text-gray-300'
                     }`}
                   >
                     Buy
                   </button>
                   <button
-                    onClick={() => setIsBuying(false)}
-                    className={`px-4 py-2 rounded ${
-                      !isBuying ? 'bg-primary text-white' : 'bg-gray-600'
+                    onClick={() => {
+                      setIsBuying(false);
+                      setIsLimitOrder(false);
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                      !isBuying && !isLimitOrder ? 'bg-primary text-white' : 'bg-gray-700 text-gray-300'
                     }`}
                   >
                     Sell
                   </button>
+                  <button
+                    onClick={() => {
+                      setIsBuying(true);
+                      setIsLimitOrder(true);
+                    }}
+                    className={`flex-1 py-2 px-4 rounded-lg transition-colors ${
+                      isLimitOrder ? 'bg-primary text-white' : 'bg-gray-700 text-gray-300'
+                    }`}
+                  >
+                    Limit
+                  </button>
                 </div>
               </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm mb-2">
-                    {isBuying ? 'Available Cash' : `${crypto.symbol} Available`}
-                  </label>
-                  <div className="text-xl font-bold">
-                    {isBuying 
-                      ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
-                      : `${activeUser?.cryptos?.[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
-                    }
+              {isLimitOrder ? (
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <label className="block text-sm mb-2">Montant ({crypto.symbol})</label>
+                    <input
+                      type="number"
+                      value={purchaseAmount}
+                      onChange={(e) => setPurchaseAmount(e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white"
+                      placeholder={`Entrez le montant en ${crypto.symbol}`}
+                    />
                   </div>
+                  <div>
+                    <label className="block text-sm mb-2">Prix limite (USD)</label>
+                    <input
+                      type="number"
+                      value={limitPrice}
+                      onChange={(e) => setLimitPrice(e.target.value)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white"
+                      placeholder="Entrez le prix limite"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-2">Date limite</label>
+                    <input
+                      type="datetime-local"
+                      value={limitDate}
+                      onChange={(e) => setLimitDate(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Coût total estimé: ${((parseFloat(purchaseAmount) || 0) * (parseFloat(limitPrice) || 0)).toFixed(2)}
+                  </div>
+                  <button
+                    onClick={handleLimitOrder}
+                    disabled={!purchaseAmount || !limitPrice || !limitDate}
+                    className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Placer l'ordre limite
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-sm mb-2">
-                    Amount in {crypto.symbol}
-                  </label>
-                  <input
-                    type="number"
-                    value={isBuying ? purchaseAmount : saleAmount}
-                    onChange={handleAmountChange}
-                    min="0"
-                    max={isBuying ? getMaxPurchaseAmount() : getMaxSaleAmount()}
-                    step="any"
-                    placeholder={isBuying 
-                      ? `Max: ${getMaxPurchaseAmount().toFixed(8)}`
-                      : `Max: ${getMaxSaleAmount().toFixed(8)}`
-                    }
-                    className="w-full bg-gray/10 p-2 rounded border border-gray/20 focus:outline-none focus:border-primary"
-                  />
-                </div>
-
-                {(isBuying ? purchaseAmount : saleAmount) && (
-                  <div className="p-4 bg-background rounded">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-400">Total Value</span>
-                      <span className="font-medium">
-                        ${(parseFloat(isBuying ? purchaseAmount : saleAmount) * parseFloat(crypto.price_usd)).toFixed(2)}
-                      </span>
+              ) : (
+                <div className="space-y-4 mt-4">
+                  <div>
+                    <label className="block text-sm mb-2">
+                      {isBuying ? 'Available Cash' : `${crypto.symbol} Available`}
+                    </label>
+                    <div className="text-xl font-bold">
+                      {isBuying 
+                        ? `$${activeUser?.cash?.toFixed(2) || '0.00'}`
+                        : `${activeUser?.cryptos?.[crypto.symbol]?.toFixed(8) || '0.00000000'} ${crypto.symbol}`
+                      }
                     </div>
                   </div>
-                )}
 
-                <button
-                  onClick={handleTransaction}
-                  disabled={!activeUser || !(isBuying ? purchaseAmount : saleAmount) || parseFloat(isBuying ? purchaseAmount : saleAmount) <= 0}
-                  className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isBuying ? 'Buy' : 'Sell'} {crypto.symbol}
-                </button>
-              </div>
+                  <div>
+                    <label className="block text-sm mb-2">
+                      Amount in {crypto.symbol}
+                    </label>
+                    <input
+                      type="number"
+                      value={isBuying ? purchaseAmount : saleAmount}
+                      onChange={handleAmountChange}
+                      min="0"
+                      max={isBuying ? getMaxPurchaseAmount() : getMaxSaleAmount()}
+                      step="any"
+                      placeholder={isBuying 
+                        ? `Max: ${getMaxPurchaseAmount().toFixed(8)}`
+                        : `Max: ${getMaxSaleAmount().toFixed(8)}`
+                      }
+                      className="w-full bg-gray/10 p-2 rounded border border-gray/20 focus:outline-none focus:border-primary"
+                    />
+                  </div>
+
+                  {(isBuying ? purchaseAmount : saleAmount) && (
+                    <div className="p-4 bg-background rounded">
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-400">Total Value</span>
+                        <span className="font-medium">
+                          ${(parseFloat(isBuying ? purchaseAmount : saleAmount) * parseFloat(crypto.price_usd)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleTransaction}
+                    disabled={!activeUser || !(isBuying ? purchaseAmount : saleAmount) || parseFloat(isBuying ? purchaseAmount : saleAmount) <= 0}
+                    className="w-full bg-primary hover:bg-primary/80 text-white font-bold py-3 px-4 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isBuying ? 'Buy' : 'Sell'} {crypto.symbol}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="bg-gray/20 p-6 rounded-lg">
-              <h3 className="text-lg font-medium mb-4">Your {crypto.symbol} Holdings</h3>
-              <div className="text-2xl font-bold">
-                {formatNumber(activeUser?.cryptos?.[crypto.symbol] || 0)} {crypto.symbol}
-              </div>
-              <div className="text-sm text-gray-400">
-                ≈ ${formatNumber((activeUser?.cryptos?.[crypto.symbol] || 0) * crypto.price_usd)}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -560,12 +717,55 @@ const ShowCrypto = () => {
           )}
         </div>
       </div>
-      <Modal 
-        isOpen={modalState.isOpen}
-        onClose={closeModal}
-        type={modalState.type}
-        message={modalState.message}
-      />
+      {limitOrders.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-medium text-white mb-4">Ordres limites</h3>
+          <div className="space-y-4">
+            {limitOrders
+              .filter(order => order.userEmail === activeUser?.email)
+              .map(order => (
+                <div key={order.id} className="bg-gray-700/50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-400">
+                        {order.amount} {order.symbol} @ ${order.limitPrice}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Total: ${order.totalCost.toFixed(2)}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Expire le: {new Date(order.expiryDate).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Status: {order.status}
+                      </p>
+                    </div>
+                    {order.status === 'active' && (
+                      <button
+                        onClick={() => {
+                          const updatedOrders = limitOrders.map(o => 
+                            o.id === order.id ? { ...o, status: 'cancelled' } : o
+                          );
+                          localStorage.setItem(`limit-orders-${activeUser.email}`, JSON.stringify(updatedOrders));
+                          setLimitOrders(updatedOrders);
+                        }}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Annuler
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+        />
+      )}
     </div>
   )
 }
