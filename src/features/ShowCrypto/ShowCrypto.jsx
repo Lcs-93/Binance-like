@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Chart from '../../components/Chart/Chart'
 import MiniChart from '../../components/MiniChart/MiniChart'
-import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line } from 'react-icons/ri'
+import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line, RiEditLine, RiDeleteBinLine, RiThumbUpLine, RiThumbUpFill, RiArrowUpLine, RiArrowUpFill, RiArrowDownLine, RiArrowDownFill } from 'react-icons/ri'
 import Toast from '../../components/Toast/Toast'
 import SimilarCryptos from './components/SimilarCryptos'
 import CryptoComments from './components/CryptoComments'
@@ -52,47 +52,49 @@ const ShowCrypto = () => {
   const [limitDate, setLimitDate] = useState('')
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchData = async (isInitial = false) => {
       try {
         const now = Date.now()
-
-        setLoading(true)
+        if (isInitial) setLoading(true)
+        
         const response = await fetch(`https://api.coinlore.net/api/ticker/?id=${id}`)
         const data = await response.json()
         if (data && data.length > 0) {
           setCrypto(data[0])
           setLastUpdate(now)
           
-          const storedComments = JSON.parse(localStorage.getItem(`crypto-comments-${id}`)) || []
-          setComments(storedComments)
-          
-          const allCryptosResponse = await fetch('https://api.coinlore.net/api/tickers/')
-          const allCryptosData = await allCryptosResponse.json()
-          if (allCryptosData && allCryptosData.data) {
-            const currentPrice = parseFloat(data[0].price_usd)
-            const sortedCryptos = allCryptosData.data
-              .filter(c => c.id !== id)
-              .sort((a, b) => {
-                const priceA = parseFloat(a.price_usd)
-                const priceB = parseFloat(b.price_usd)
-                const diffA = Math.abs(priceA - currentPrice)
-                const diffB = Math.abs(priceB - currentPrice)
-                return diffA - diffB
-              })
+          if (isInitial) {
+            const storedComments = JSON.parse(localStorage.getItem(`crypto-comments-${id}`)) || []
+            setComments(storedComments)
+            
+            const allCryptosResponse = await fetch('https://api.coinlore.net/api/tickers/')
+            const allCryptosData = await allCryptosResponse.json()
+            if (allCryptosData && allCryptosData.data) {
+              const currentPrice = parseFloat(data[0].price_usd)
+              const sortedCryptos = allCryptosData.data
+                .filter(c => c.id !== id)
+                .sort((a, b) => {
+                  const priceA = parseFloat(a.price_usd)
+                  const priceB = parseFloat(b.price_usd)
+                  const diffA = Math.abs(priceA - currentPrice)
+                  const diffB = Math.abs(priceB - currentPrice)
+                  return diffA - diffB
+                })
 
-            const similar = sortedCryptos.slice(0, 5)
-            setSimilarCryptos(similar)
+              const similar = sortedCryptos.slice(0, 5)
+              setSimilarCryptos(similar)
+            }
           }
         }
-        setLoading(false)
+        if (isInitial) setLoading(false)
       } catch (err) {
         setError(err.message)
-        setLoading(false)
+        if (isInitial) setLoading(false)
       }
     }
 
-    fetchData()
-    const interval = setInterval(fetchData, 5000)
+    fetchData(true) // Chargement initial avec loading
+    const interval = setInterval(() => fetchData(false), 5000) // Mises à jour sans loading
     return () => clearInterval(interval)
   }, [id])
 
@@ -153,6 +155,67 @@ const ShowCrypto = () => {
     setComments(updatedComments);
     localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
   };
+
+  const handleLikeComment = (commentId) => {
+    if (!activeUser) return;
+
+    const updatedComments = comments.map(comment => {
+      if (comment.id === commentId) {
+        const likes = comment.likes || [];
+        const userIndex = likes.indexOf(activeUser.id);
+        
+        if (userIndex === -1) {
+          return { ...comment, likes: [...likes, activeUser.id] };
+        } else {
+          return { 
+            ...comment, 
+            likes: [...likes.slice(0, userIndex), ...likes.slice(userIndex + 1)] 
+          };
+        }
+      }
+      return comment;
+    });
+
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
+
+  const handleVoteComment = (commentId, voteType) => {
+    if (!activeUser) return;
+
+    const updatedComments = comments.map(comment => {
+      if (comment.id === commentId) {
+        const votes = comment.votes || [];
+        const existingVote = votes.find(v => v.userId === activeUser.id);
+        
+        if (!existingVote) {
+          return {
+            ...comment,
+            votes: [...votes, { userId: activeUser.id, type: voteType }]
+          };
+        } else if (existingVote.type === voteType) {
+          return {
+            ...comment,
+            votes: votes.filter(v => v.userId !== activeUser.id)
+          };
+        } else {
+          return {
+            ...comment,
+            votes: votes.map(v => 
+              v.userId === activeUser.id 
+                ? { ...v, type: voteType }
+                : v
+            )
+          };
+        }
+      }
+      return comment;
+    });
+
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
+
   const handlePurchase = () => {
     if (!activeUser || !crypto) return;
 
@@ -612,8 +675,10 @@ const ShowCrypto = () => {
         handleAddComment={handleAddComment}
         handleEditComment={handleEditComment}
         handleDeleteComment={handleDeleteComment}
+        handleLikeComment={handleLikeComment}
+        handleVoteComment={handleVoteComment}
         activeUser={activeUser}
-        formatDate={formatDate}
+        formatDate={(date) => new Date(date).toLocaleString()}
       />
 
 
