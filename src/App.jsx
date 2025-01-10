@@ -9,6 +9,7 @@ import Market from './features/Market/Market';
 import Transactions from './features/Transactions/Transactions';
 import ShowCrypto from './features/ShowCrypto/ShowCrypto';
 import Topbar from './components/Topbar';
+import DashboardClient from './components/DashboardClient/DashboardClient';
 import './App.css';
 
 function App() {
@@ -27,7 +28,6 @@ function App() {
 
         <div className={`flex flex-col flex-1 ${isAuthenticated ? 'ml-[250px]' : ''}`}>
           {isAuthenticated && <Topbar onLogout={() => setIsAuthenticated(false)} />}
-          
           <main className={isAuthenticated ? '' : 'flex items-center justify-center h-screen'}>
             <Routes>
               <Route
@@ -58,6 +58,7 @@ function App() {
                   <Route path="/market" element={<Market />} />
                   <Route path="/transactions" element={<Transactions />} />
                   <Route path="/crypto/:id" element={<ShowCrypto />} />
+                  <Route path="/dashboard" element={<DashboardClient />} />
                   <Route path="/" element={<Navigate to="/home" replace />} />
                 </>
               ) : (

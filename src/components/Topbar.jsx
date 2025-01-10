@@ -158,13 +158,13 @@ const Topbar = ({ onLogout }) => {
                 </div>
 
                 <div className="py-2">
-                  <a
-                    href="#dashboard"
-                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
-                  >
-                    <MdDashboard className="text-lg mr-3" />
+                <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                >
+                <MdDashboard className="text-lg mr-3" />
                     Tableau de bord
-                  </a>
+                </button>
                   <button
                     onClick={() => {
                       onLogout();
