@@ -3,20 +3,16 @@ import SidebarLink from './SidebarLink'
 
 const Sidebar = () => {
   return (
-    <aside className="w-56 h-screen bg-background border-r border-gray">
-      <div className="h-20"></div>
+    <aside className="w-64 h-screen bg-background border-r border-gray">
+      <div className="h-20 flex items-center justify-start p-4">
+      <h1 className="text-2xl font-bold text-primary">Trinance</h1>
+      </div>
 
-      <nav className="space-y-2 fixed top-20 w-56">
+      <nav className="space-y-2 fixed top-20 w-56 m-4">
         <SidebarLink
           to="/home"
           icon={<RiHome5Line className="text-xl" />}
           text="Accueil"
-        />
-
-        <SidebarLink
-          to="/market"
-          icon={<RiStockLine className="text-xl" />}
-          text="Marché"
         />
 
         <SidebarLink
@@ -26,16 +22,23 @@ const Sidebar = () => {
         />
 
         <SidebarLink
+          to="/transactions"
+          icon={<RiExchangeDollarLine className="text-xl" />}
+          text="Transactions"
+        />
+
+        <SidebarLink
+          to="/market"
+          icon={<RiStockLine className="text-xl" />}
+          text="Marché"
+        />
+
+        <SidebarLink
           to="/exchanges"
           icon={<RiExchangeDollarLine className="text-xl" />}
           text="Echanges"
         />
 
-        <SidebarLink
-          to="/transactions" 
-          icon={<RiExchangeDollarLine className="text-xl" />} 
-          text="Transactions" 
-        />
       </nav>
     </aside>
   )
