@@ -7,7 +7,7 @@ const Sidebar = () => {
     <aside className="w-64 h-screen bg-background border-r border-gray">
       <div className="h-20 flex items-center justify-start gap-2 p-4">
         <img src={Trinance} alt="" className='w-8 h-6' />
-      <h1 className="text-2xl font-bold text-primary">Trinance</h1>
+      <h1 className="text-xl font-bold text-primary">TRINANCE</h1>
       </div>
 
       <nav className="space-y-2 fixed top-20 w-56 m-4">
