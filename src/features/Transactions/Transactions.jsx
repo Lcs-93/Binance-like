@@ -1,187 +1,195 @@
-import { useState, useEffect } from 'react'
-import { RiSearchLine, RiArrowRightLine } from 'react-icons/ri'
-import ReactCountryFlag from 'react-country-flag'
+import { useState, useEffect, useCallback } from 'react'
+import { RiSearchLine, RiArrowUpLine, RiArrowDownLine, RiExchangeDollarLine, RiMoneyDollarCircleLine } from 'react-icons/ri'
 
-const REFRESH_INTERVAL = 5000
-
-const countryToCode = {
-  'United States': 'US',
-  'United Kingdom': 'GB',
-  'China': 'CN',
-  'Japan': 'JP',
-  'South Korea': 'KR',
-  'Singapore': 'SG',
-  'Hong Kong': 'HK',
-  'Malta': 'MT',
-  'Seychelles': 'SC',
-  'British Virgin Islands': 'VG',
-  'Mexico': 'MX',
-  'Luxembourg': 'LU',
-  'Switzerland': 'CH',
-  'Czech Republic': 'CZ',
-  'Germany': 'DE',
-  'Netherlands': 'NL',
-  'Australia': 'AU',
-  'New Zealand': 'NZ',
-  'Canada': 'CA',
-  'France': 'FR',
-  'Belgium': 'BE',
-  'Italy': 'IT',
-  'Sweden': 'SE',
-  'Denmark': 'DK',
-  'Norway': 'NO',
-  'Ireland': 'IE',
-  'Estonia': 'EE',
-  'Turkey': 'TR',
-  'US': 'US',
-  'Brazil': 'BR',
-  'UK': 'GB',
-  'Russia': 'RU',
-  'India': 'IN',
-  'Korea': 'KR',
-  'HK': 'HK',
-  'Indonesia': 'ID',
-  'Ukraine': 'UA',
-  'Panama': 'PA',
-  'Cayman Islands': 'KY',
-  'Thailand': 'TH',
-  'Malaysia': 'MY',
-  'South African': 'ZA',
-  'Vietnam': 'VN',
-  'Chile': 'CL',
-  'United Arab Emirates': 'AE',
-  'Taiwan': 'TW',
-  'Israel': 'IL',
-  'Belarus': 'BY',
-  'Saudi Arabia': 'SA',
-  'Qatar': 'QA',
-  'Argentina': 'AR',
-  'Colombia': 'CO',
-  'Peru': 'PE',
-  'Venezuela': 'VE',
-  'Poland': 'PL',
+const formatDate = (dateString) => {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
 }
 
-const formatNumber = (num) => {
-  if (num >= 1e9) {
-    return (num / 1e9).toFixed(2) + 'B'
-  } else if (num >= 1e6) {
-    return (num / 1e6).toFixed(2) + 'M'
-  } else if (num >= 1e3) {
-    return (num / 1e3).toFixed(2) + 'K'
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(amount)
+}
+
+const TransactionIcon = ({ type }) => {
+  switch (type) {
+    case 'buy':
+      return <RiArrowDownLine className="text-green-500" size={20} />
+    case 'sell':
+      return <RiArrowUpLine className="text-red-500" size={20} />
+    case 'deposit':
+      return <RiMoneyDollarCircleLine className="text-blue-500" size={20} />
+    case 'withdrawal':
+      return <RiExchangeDollarLine className="text-yellow-500" size={20} />
+    default:
+      return null
   }
-  return num.toFixed(2)
 }
 
 const Transactions = () => {
-  const [exchanges, setExchanges] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [transactions, setTransactions] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [filter, setFilter] = useState('all')
 
-  const fetchExchangeData = async () => {
+  const loadTransactions = useCallback(() => {
     try {
-      const response = await fetch('https://api.coinlore.net/api/exchanges/')
-      if (!response.ok) {
-        throw new Error('Network response was not ok')
-      }
-      const data = await response.json()
-      const exchangesArray = Object.entries(data).map(([key, value]) => ({
-        id: key,
-        ...value
-      }))
-      setExchanges(exchangesArray)
-      setError(null)
-    } catch (error) {
-      setError(error.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+      const allTransactions = []
+      
+      const cryptoTransactions = JSON.parse(localStorage.getItem('transactions') || '[]')
+      allTransactions.push(...cryptoTransactions)
+      
+      const deposits = JSON.parse(localStorage.getItem('deposits') || '[]')
+      deposits.forEach(deposit => {
+        allTransactions.push({
+          id: deposit.id || crypto.randomUUID(),
+          type: 'deposit',
+          amount: deposit.amount,
+          total: deposit.amount,
+          date: deposit.date || new Date().toISOString(),
+          status: 'completed'
+        })
+      })
+      
+      const withdrawals = JSON.parse(localStorage.getItem('withdrawals') || '[]')
+      withdrawals.forEach(withdrawal => {
+        allTransactions.push({
+          id: withdrawal.id || crypto.randomUUID(),
+          type: 'withdrawal',
+          amount: withdrawal.amount,
+          total: withdrawal.amount,
+          date: withdrawal.date || new Date().toISOString(),
+          status: 'completed'
+        })
+      })
 
-  useEffect(() => {
-    fetchExchangeData()
-    const intervalId = setInterval(fetchExchangeData, REFRESH_INTERVAL)
-    return () => clearInterval(intervalId)
+      allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date))
+      setTransactions(allTransactions)
+    } catch (error) {
+      console.error('Erreur lors du chargement des transactions:', error)
+    }
   }, [])
 
-  const filteredExchanges = exchanges.filter(exchange =>
-    exchange.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (exchange.country && exchange.country.toLowerCase().includes(searchQuery.toLowerCase()))
-  )
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'transactions' || e.key === 'deposits' || e.key === 'withdrawals') {
+        loadTransactions()
+      }
+    }
 
-  if (loading && !exchanges.length) {
-    return <div className="flex justify-center items-center h-screen">Loading...</div>
-  }
+    loadTransactions()
 
-  if (error) {
-    return <div className="text-red-500 text-center">{error}</div>
-  }
+    const interval = setInterval(loadTransactions, 5000)
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('transactionUpdated', loadTransactions)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('transactionUpdated', loadTransactions)
+    }
+  }, [loadTransactions])
+
+  const filteredTransactions = transactions.filter(transaction => {
+    if (!transaction) return false
+    
+    const searchLower = searchQuery.toLowerCase()
+    const matchesSearch = 
+      transaction.type?.toLowerCase().includes(searchLower) ||
+      (transaction.cryptoName && transaction.cryptoName.toLowerCase().includes(searchLower))
+    
+    if (filter === 'all') {
+      return matchesSearch
+    }
+    return matchesSearch && transaction.type === filter
+  })
 
   return (
-    <div className="space-y-6 p-8">
-      <div className="relative">
-        <RiSearchLine className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-        <input
-          type="text"
-          placeholder="Search by exchange or country..."
-          className="w-full bg-gray/50 text-white pl-12 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+    <div className="p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold text-white">Historique des transactions</h2>
+        <div className="flex items-center gap-4">
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-gray/20 text-white px-4 py-2 rounded-lg"
+          >
+            <option value="all">Tous les types</option>
+            <option value="buy">Achats</option>
+            <option value="sell">Ventes</option>
+            <option value="deposit">Dépôts</option>
+            <option value="withdrawal">Retraits</option>
+          </select>
+          <div className="relative">
+            <RiSearchLine className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              className="w-64 bg-gray/20 text-white pl-10 pr-4 py-2 rounded-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        {filteredExchanges.map(exchange => {
-          const countryCode = countryToCode[exchange.country] || 'UN'
-          
-          return (
-            <div
-              key={exchange.id}
-              className="flex items-center justify-between p-4 hover:bg-gray/50 transition-colors rounded-lg cursor-pointer"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                  <ReactCountryFlag
-                    countryCode={countryCode}
-                    svg
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                    }}
-                  />
-                </div>
-                <div>
-                  <div className="text-white font-medium">{exchange.name}</div>
-                  <div className="text-sm text-gray-400">Exchange</div>
-                </div>
-              </div>
+      <div className="bg-gray/20 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-6 gap-4 p-4 border-b border-gray text-sm text-gray-400">
+          <div>Date</div>
+          <div>Type</div>
+          <div>Crypto</div>
+          <div className="text-right">Montant</div>
+          <div className="text-right">Prix</div>
+          <div className="text-right">Total</div>
+        </div>
 
-              <div className="flex items-center gap-8">
-                <div className="text-right w-32">
-                  <div className="text-white font-medium">
-                    ${formatNumber(parseFloat(exchange.volume_usd || 0))}
-                  </div>
-                  <div className="text-sm text-gray-400">Volume 24h</div>
+        {filteredTransactions.length === 0 ? (
+          <div className="p-4 text-center text-gray-400">
+            Aucune transaction trouvée
+          </div>
+        ) : (
+          filteredTransactions.map((transaction) => (
+            <div
+              key={transaction.id}
+              className="grid grid-cols-6 gap-4 p-4 hover:bg-gray/30 transition-colors items-center"
+            >
+              <div className="text-sm text-gray-300">
+                {formatDate(transaction.date)}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <TransactionIcon type={transaction.type} />
                 </div>
-                <div className="text-right w-32">
-                  <div className="text-white font-medium">
-                    {formatNumber(parseFloat(exchange.pair_count || 0))}
-                  </div>
-                  <div className="text-sm text-gray-400">Pairs</div>
-                </div>
-                <div className="text-right w-32">
-                  <div className="text-white font-medium">
-                    {exchange.country || 'Unknown'}
-                  </div>
-                  <div className="text-sm text-gray-400">Country</div>
-                </div>
-                <RiArrowRightLine size={18} className="text-gray-400" />
+                <span className="text-white">
+                  {transaction.type === 'buy' && 'Achat'}
+                  {transaction.type === 'sell' && 'Vente'}
+                  {transaction.type === 'deposit' && 'Dépôt'}
+                  {transaction.type === 'withdrawal' && 'Retrait'}
+                </span>
+              </div>
+              <div className="text-gray-400">
+                {transaction.cryptoName || '-'}
+              </div>
+              <div className="text-right text-white">
+                {transaction.amount ? `${transaction.amount} ${transaction.cryptoName || 'EUR'}` : '-'}
+              </div>
+              <div className="text-right text-white">
+                {transaction.price ? formatCurrency(transaction.price) : '-'}
+              </div>
+              <div className="text-right text-white">
+                {formatCurrency(transaction.total)}
               </div>
             </div>
-          )
-        })}
+          ))
+        )}
       </div>
     </div>
   )

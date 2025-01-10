@@ -1,6 +1,7 @@
 import { RiWallet3Line, RiMoneyDollarCircleLine, RiCloseLine } from 'react-icons/ri';
 import { useState, useEffect, useRef } from 'react';
 import Toast from './Toast/Toast';
+import { addTransaction } from '../utils/transactionUtils';
 
 const RightSidebar = ({ isOpen, onClose }) => {
   const [activeUser, setActiveUser] = useState(null);
@@ -57,6 +58,13 @@ const RightSidebar = ({ isOpen, onClose }) => {
       cash: (activeUser.cash || 0) + amount
     };
 
+    addTransaction({
+      type: 'deposit',
+      amount: amount,
+      total: amount,
+      status: 'completed'
+    });
+
     localStorage.setItem('activeUser', JSON.stringify(updatedUser));
     setActiveUser(updatedUser);
     setDepositAmount('');
@@ -85,6 +93,13 @@ const RightSidebar = ({ isOpen, onClose }) => {
       ...activeUser,
       cash: activeUser.cash - amount
     };
+
+    addTransaction({
+      type: 'withdrawal',
+      amount: amount,
+      total: amount,
+      status: 'completed'
+    });
 
     localStorage.setItem('activeUser', JSON.stringify(updatedUser));
     setActiveUser(updatedUser);
@@ -115,7 +130,7 @@ const RightSidebar = ({ isOpen, onClose }) => {
           <div className="space-y-4">
             {!showDepositForm && !showWithdrawForm ? (
               <>
-                <button 
+                <button
                   onClick={() => setShowDepositForm(true)}
                   className="w-full bg-gray/20 hover:bg-gray/30 transition-colors p-6 rounded-lg text-left"
                 >
@@ -132,7 +147,7 @@ const RightSidebar = ({ isOpen, onClose }) => {
                   </div>
                 </button>
 
-                <button 
+                <button
                   onClick={() => setShowWithdrawForm(true)}
                   className="w-full bg-gray/20 hover:bg-gray/30 transition-colors p-6 rounded-lg text-left"
                 >
@@ -159,7 +174,7 @@ const RightSidebar = ({ isOpen, onClose }) => {
             ) : showDepositForm ? (
               <div className="bg-gray/20 p-6 rounded-lg">
                 <h3 className="text-lg font-medium mb-4">Dépôt d'argent</h3>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-2">Montant en dollars</label>
                   <input
@@ -193,7 +208,7 @@ const RightSidebar = ({ isOpen, onClose }) => {
             ) : (
               <div className="bg-gray/20 p-6 rounded-lg">
                 <h3 className="text-lg font-medium mb-4">Retrait d'argent</h3>
-                
+
                 <div className="mb-4">
                   <label className="block text-sm font-medium mb-2">Montant en dollars</label>
                   <input
