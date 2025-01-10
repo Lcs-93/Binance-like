@@ -150,7 +150,7 @@ const Portfolio = () => {
             >
               <div className="flex items-center gap-3">
                 <img
-                  src={`https://www.coinlore.com/img/25x25/${crypto.name.toLowerCase()}.png`}
+                  src={`https://lcw.nyc3.cdn.digitaloceanspaces.com/production/currencies/64/${crypto.symbol.toLowerCase()}.png`}
                   alt={crypto.name}
                   className="w-8 h-8"
                   onError={(e) => {
