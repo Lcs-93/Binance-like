@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Chart from '../../components/Chart/Chart'
 import MiniChart from '../../components/MiniChart/MiniChart'
-import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line } from 'react-icons/ri'
+import { RiArrowRightLine, RiSendPlaneFill, RiWallet3Line , RiEditLine, RiDeleteBinLine } from 'react-icons/ri'
 import Toast from '../../components/Toast/Toast';
 
 const formatNumber = (num) => {
@@ -91,22 +91,37 @@ const ShowCrypto = () => {
   }, [])
 
   const handleAddComment = (e) => {
-    e.preventDefault()
-    if (!newComment.trim()) return
+    e.preventDefault();
+    if (!newComment.trim()) return;
 
     const comment = {
       id: Date.now(),
       text: newComment.trim(),
       timestamp: new Date().toISOString(),
-      cryptoPrice: parseFloat(crypto.price_usd)
-    }
+      cryptoPrice: parseFloat(crypto.price_usd),
+      userId: activeUser?.id,
+      username: activeUser?.username,
+    };
 
-    const updatedComments = [...comments, comment]
-    setComments(updatedComments)
-    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments))
-    setNewComment('')
-  }
+    const updatedComments = [...comments, comment];
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+    setNewComment('');
+  };
 
+  const handleEditComment = (commentId, newText) => {
+    const updatedComments = comments.map((comment) =>
+      comment.id === commentId ? { ...comment, text: newText } : comment
+    );
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
+
+  const handleDeleteComment = (commentId) => {
+    const updatedComments = comments.filter((comment) => comment.id !== commentId);
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
   const handlePurchase = () => {
     if (!activeUser || !crypto) return;
 
@@ -672,48 +687,70 @@ const ShowCrypto = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="text-xl font-medium text-white mb-4">Comments</div>
-        
-        <form onSubmit={handleAddComment} className="flex gap-2 mb-6">
-          <input
-            type="text"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-gray/50 rounded-lg py-2 px-4 text-white placeholder-gray-light focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-          <button
-            type="submit"
-            disabled={!newComment.trim()}
-            className="bg-primary hover:bg-primary/90 text-background px-4 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RiSendPlaneFill />
-            Send
-          </button>
-        </form>
+      <div className="p-8 space-y-8">
+      {/* Crypto Info */}
+      <div className="text-xl font-medium text-white mb-4">Comments</div>
 
-        <div className="space-y-4">
-          {comments.length === 0 ? (
-            <div className="text-gray-light text-center py-8">
-              No comments yet. Be the first to comment!
-            </div>
-          ) : (
-            comments.map(comment => (
-              <div key={comment.id} className="bg-gray/20 p-4 rounded-lg">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="text-sm text-gray-light">
-                    {formatDate(comment.timestamp)}
-                  </div>
-                  <div className="text-sm text-gray-light">
-                    Price: ${comment.cryptoPrice.toLocaleString()}
-                  </div>
+      {/* Comment Form */}
+      <form onSubmit={handleAddComment} className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Add a comment..."
+          className="flex-1 bg-gray/50 rounded-lg py-2 px-4 text-white placeholder-gray-light focus:outline-none focus:ring-2 focus:ring-primary/50"
+        />
+        <button
+          type="submit"
+          disabled={!newComment.trim()}
+          className="bg-primary hover:bg-primary/90 text-background px-4 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RiSendPlaneFill />
+          Send
+        </button>
+      </form>
+
+      {/* Comment List */}
+      <div className="space-y-4">
+        {comments.length === 0 ? (
+          <div className="text-gray-light text-center py-8">
+            No comments yet. Be the first to comment!
+          </div>
+        ) : (
+          comments.map((comment) => (
+            <div key={comment.id} className="bg-gray/20 p-4 rounded-lg">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm text-gray-light">
+                  <span className="font-bold">{comment.username}</span> | {formatDate(comment.timestamp)}
                 </div>
-                <div className="text-white">{comment.text}</div>
+                <div className="text-sm text-gray-light">
+                  Price: ${comment.cryptoPrice.toLocaleString()}
+                </div>
               </div>
-            ))
-          )}
-        </div>
+              <div className="text-white mb-4">{comment.text}</div>
+              {comment.userId === activeUser?.id && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const newText = prompt('Edit your comment:', comment.text);
+                      if (newText) handleEditComment(comment.id, newText);
+                    }}
+                    className="text-blue-500 hover:underline"
+                  >
+                   <RiEditLine size={20} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteComment(comment.id)}
+                    className="text-red-500 hover:underline"
+                  >
+                    <RiDeleteBinLine size={20} />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
       </div>
       {limitOrders.length > 0 && (
         <div className="mt-8">

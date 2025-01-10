@@ -146,11 +146,10 @@ const Home = () => {
                     <span className="text-3xl font-bold">
                       ${formatNumber(portfolioValue.totalValue)}
                     </span>
-                    <span className={`text-sm px-2 py-1 rounded ${
-                      portfolioValue.dailyChange >= 0
-                        ? 'bg-green-900/50 text-green-400'
-                        : 'bg-red-900/50 text-red-400'
-                    }`}>
+                    <span className={`text-sm px-2 py-1 rounded ${portfolioValue.dailyChange >= 0
+                      ? 'bg-green-900/50 text-green-400'
+                      : 'bg-red-900/50 text-red-400'
+                      }`}>
                       {portfolioValue.dailyChange >= 0 ? '+' : ''}
                       {portfolioValue.dailyChange.toFixed(2)}%
                     </span>
@@ -171,39 +170,43 @@ const Home = () => {
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <RiCoinLine size={18} className="text-primary" />
+            <Link to="/actifs">
+              <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <RiCoinLine size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400">Cryptos</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-gray-400">Cryptos</div>
+                <div className="flex items-center gap-40">
+                  <div className="text-xl font-medium text-white">
+                    ${portfolioValue.cryptoValue.toLocaleString()}
+                  </div>
+                  <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
                 </div>
               </div>
-              <div className="flex items-center gap-40">
-                <div className="text-xl font-medium text-white">
-                  ${portfolioValue.cryptoValue.toLocaleString()}
-                </div>
-                <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-yellow-400 transition-colors" />
-              </div>
-            </div>
+            </Link>
 
-            <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <RiWallet3Line size={18} className="text-primary" />
+            <Link to="/actifs">
+              <div className="flex items-center justify-between p-4 hover:bg-gray/50 group transition-colors rounded-lg cursor-pointer">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <RiWallet3Line size={18} className="text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400">Cash</div>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-sm text-gray-400">Cash</div>
+                <div className="flex items-center gap-40">
+                  <div className="text-xl font-medium text-white">
+                    ${portfolioValue.cashValue.toLocaleString()}
+                  </div>
+                  <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-primary transition-colors" />
                 </div>
               </div>
-              <div className="flex items-center gap-40">
-                <div className="text-xl font-medium text-white">
-                  ${portfolioValue.cashValue.toLocaleString()}
-                </div>
-                <RiArrowRightLine size={18} className="text-gray-400 group-hover:text-primary transition-colors" />
-              </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
