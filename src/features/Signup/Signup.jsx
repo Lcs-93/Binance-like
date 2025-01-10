@@ -71,7 +71,7 @@ function Signup({ onSignupSuccess }) {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Pseudo"
-            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <div className="mb-4">
@@ -80,7 +80,7 @@ function Signup({ onSignupSuccess }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
         <div className="mb-6">
@@ -89,7 +89,7 @@ function Signup({ onSignupSuccess }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mot de passe"
-            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 border border-gray-300 rounded text-black focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
 
@@ -97,7 +97,7 @@ function Signup({ onSignupSuccess }) {
 
         <button
           onClick={handleSignup}
-          className="w-full py-3 bg-green-600 text-white font-bold rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full py-3 bg-primary  text-white font-bold rounded-md hover:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-primary"
         >
           S'inscrire
         </button>
@@ -106,7 +106,7 @@ function Signup({ onSignupSuccess }) {
             Vous avez déjà un compte ?{' '}
             <button
               onClick={() => navigate('/')}
-              className="text-blue-500 hover:underline"
+              className="text-primary hover:underline"
             >
               Connectez-vous ici
             </button>

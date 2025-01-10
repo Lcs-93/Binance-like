@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 
-const SidebarLink = ({ to, icon: Icon, label }) => {
+const SidebarLink = ({ to, icon, text }) => {
   const location = useLocation()
   const isActive = to === '/market' 
     ? location.pathname === to || location.pathname.startsWith('/crypto/')
@@ -15,8 +15,8 @@ const SidebarLink = ({ to, icon: Icon, label }) => {
           : 'hover:bg-gray text-white'
       }`}
     >
-      <Icon className="text-xl" />
-      <span>{label}</span>
+      {icon}
+      <span>{text}</span>
     </Link>
   )
 }

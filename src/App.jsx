@@ -7,9 +7,11 @@ import Footer from './components/Footer/Footer';
 import Home from './features/Home/Home';
 import Market from './features/Market/Market';
 import Transactions from './features/Transactions/Transactions';
+import Exchange from './features/Exchange/Exchange';
 import ShowCrypto from './features/ShowCrypto/ShowCrypto';
 import Topbar from './components/Topbar';
 import DashboardClient from './components/DashboardClient/DashboardClient';
+import Portfolio from './features/Portfolio/Portfolio';
 import './App.css';
 
 function App() {
@@ -56,9 +58,11 @@ function App() {
                 <>
                   <Route path="/home" element={<Home />} />
                   <Route path="/market" element={<Market />} />
-                  <Route path="/transactions" element={<Transactions />} />
+                  <Route path="/exchanges" element={<Exchange />} />
                   <Route path="/crypto/:id" element={<ShowCrypto />} />
                   <Route path="/dashboard" element={<DashboardClient />} />
+                  <Route path="/actifs" element={<Portfolio />} />
+                  <Route path="/transactions" element={<Transactions />} />
                   <Route path="/" element={<Navigate to="/home" replace />} />
                 </>
               ) : (

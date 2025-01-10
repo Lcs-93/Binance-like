@@ -6,6 +6,11 @@ import { MdDashboard } from "react-icons/md";
 import { IoLogOutOutline } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import RightSidebar from "./RightSidebar"
+import { Link } from "react-router-dom";  
+import { RiStockLine } from "react-icons/ri";
+import { RiWallet3Line } from "react-icons/ri";
+import { RiExchangeDollarLine } from "react-icons/ri";
+import { RiHome5Line } from "react-icons/ri";
 
 const REFRESH_INTERVAL = 5000;
 
@@ -16,6 +21,7 @@ const Topbar = ({ onLogout }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cryptos, setCryptos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastUpdate, setLastUpdate] = useState(Date.now());
   const navigate = useNavigate();
   const searchRef = useRef(null);
   let timeout;
@@ -23,10 +29,16 @@ const Topbar = ({ onLogout }) => {
   useEffect(() => {
     const fetchCryptoData = async () => {
       try {
+        const now = Date.now()
+        if (now - lastUpdate < 2000) {
+          return
+        }
+
         const response = await fetch("https://api.coinlore.net/api/tickers/");
         const data = await response.json();
         if (data && data.data) {
           setCryptos(data.data);
+          setLastUpdate(now);
         }
       } catch (error) {
         console.error("Erreur lors de la récupération des cryptos :", error);
@@ -39,9 +51,22 @@ const Topbar = ({ onLogout }) => {
   }, []);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('activeUser'));
-    setActiveUser(user);
-  }, []);
+    const handleStorageChange = () => {
+      const user = JSON.parse(localStorage.getItem('activeUser'));
+      if (user?.lastUpdate !== activeUser?.lastUpdate) {
+        setActiveUser(user);
+      }
+    };
+
+    handleStorageChange();
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('assetsUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('assetsUpdated', handleStorageChange);
+    };
+  }, [activeUser]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -152,19 +177,54 @@ const Topbar = ({ onLogout }) => {
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 bg-[#1e2329] text-white rounded-md shadow-lg py-4 w-56 border border-gray-700">
+              <div className="absolute right-0 mt-2 bg-[#1e2329] text-white rounded-md shadow-lg py-4 w-56 border border-gray-700 z-50">
                 <div className="px-4 pb-3 border-b border-gray-600">
                   <p className="text-sm font-medium">{activeUser?.email}</p>
                 </div>
 
                 <div className="py-2">
-                <button
-                onClick={() => navigate('/dashboard')}
-                className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
-                >
-                <MdDashboard className="text-lg mr-3" />
+                <Link
+                    to="/home"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <RiHome5Line className="text-lg mr-3" />
+                    Accueil
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <MdDashboard className="text-lg mr-3" />
                     Tableau de bord
-                </button>
+                  </Link>
+                  <Link
+                    to="/actifs"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <RiWallet3Line className="text-lg mr-3" />
+                    Actifs
+                  </Link>
+                  <Link
+                    to="/transactions"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <RiExchangeDollarLine className="text-lg mr-3" />
+                    Transactions
+                  </Link>
+                  <Link
+                    to="/market"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <RiStockLine className="text-lg mr-3" />
+                    Marché
+                  </Link>
+                  <Link
+                    to="/exchanges"
+                    className="flex items-center px-4 py-2 text-sm font-semibold hover:bg-gray-700 transition"
+                  >
+                    <RiExchangeDollarLine className="text-lg mr-3" />
+                    Exchanges
+                  </Link>
                   <button
                     onClick={() => {
                       onLogout();

@@ -1,4 +1,5 @@
 import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts'
+import { useMemo } from 'react'
 
 const MiniChart = ({ 
   data: cryptoData, 
@@ -6,7 +7,7 @@ const MiniChart = ({
   width = "100%", 
   height = 60 
 }) => {
-  const generateChartData = () => {
+  const chartData = useMemo(() => {
     if (cryptoData.history && cryptoData.history.length > 0) {
       return cryptoData.history.map(h => ({
         value: h.price || h.value
@@ -28,19 +29,19 @@ const MiniChart = ({
     }
 
     return data
-  }
-
-  const chartData = generateChartData()
+  }, [cryptoData.history, cryptoData.price_usd, cryptoData.percent_change_24h])
   
-  const values = chartData.map(d => d.value)
-  const minValue = Math.min(...values)
-  const maxValue = Math.max(...values)
-  const valueRange = maxValue - minValue
-  
-  const yAxisDomain = [
-    minValue - (valueRange * 0.05),
-    maxValue + (valueRange * 0.05)
-  ]
+  const yAxisDomain = useMemo(() => {
+    const values = chartData.map(d => d.value)
+    const minValue = Math.min(...values)
+    const maxValue = Math.max(...values)
+    const valueRange = maxValue - minValue
+    
+    return [
+      minValue - (valueRange * 0.05),
+      maxValue + (valueRange * 0.05)
+    ]
+  }, [chartData])
 
   return (
     <ResponsiveContainer width={width} height={height}>
