@@ -155,6 +155,56 @@ const ShowCrypto = () => {
     setComments(updatedComments);
     localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
   };
+
+  const handleLikeComment = (commentId) => {
+    if (!activeUser) return;
+
+    const updatedComments = comments.map(comment => {
+      if (comment.id === commentId) {
+        const likes = comment.likes || [];
+        const userIndex = likes.indexOf(activeUser.id);
+        
+        if (userIndex === -1) {
+          return { ...comment, likes: [...likes, activeUser.id] };
+        } else {
+          return { ...comment, likes: likes.filter(id => id !== activeUser.id) };
+        }
+      }
+      return comment;
+    });
+
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
+
+  const handleVoteComment = (commentId, voteType) => {
+    if (!activeUser) return;
+
+    const updatedComments = comments.map(comment => {
+      if (comment.id === commentId) {
+        const votes = comment.votes || [];
+        const existingVote = votes.find(v => v.userId === activeUser.id);
+        
+        if (!existingVote) {
+          return { ...comment, votes: [...votes, { userId: activeUser.id, type: voteType }] };
+        } else if (existingVote.type === voteType) {
+          return { ...comment, votes: votes.filter(v => v.userId !== activeUser.id) };
+        } else {
+          return { 
+            ...comment, 
+            votes: votes.map(v => 
+              v.userId === activeUser.id ? { ...v, type: voteType } : v
+            )
+          };
+        }
+      }
+      return comment;
+    });
+
+    setComments(updatedComments);
+    localStorage.setItem(`crypto-comments-${id}`, JSON.stringify(updatedComments));
+  };
+
   const handlePurchase = () => {
     if (!activeUser || !crypto) return;
 
@@ -614,6 +664,8 @@ const ShowCrypto = () => {
         handleAddComment={handleAddComment}
         handleEditComment={handleEditComment}
         handleDeleteComment={handleDeleteComment}
+        handleLikeComment={handleLikeComment}
+        handleVoteComment={handleVoteComment}
         activeUser={activeUser}
         formatDate={formatDate}
       />
